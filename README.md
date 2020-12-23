@@ -46,9 +46,9 @@ COCO models:
 | YOLACT | MobileNet-V2 | 22.1 | - | 15.0 | 35.7 | [download](https://drive.google.com/file/d/1L4N4VcykqE-D5JUgWW9zBd6WKmZPBAZQ/view?usp=sharing) |
 | YolactEdge | MobileNet-V2 | 20.8 | - | 35.7 | 161.4 | [download](https://drive.google.com/file/d/1L4N4VcykqE-D5JUgWW9zBd6WKmZPBAZQ/view?usp=sharing) |
 | YOLACT | R-50-FPN | 28.2 | 42.5 | 9.1 | 45.0 | [download](https://drive.google.com/file/d/15TRS8MNNe3pmjilonRy9OSdJdCPl5DhN/view?usp=sharing) |
-| YolactEdge | R-50-FPN | 30.1| - | 30.7 | 140.3 | [download](https://drive.google.com/file/d/15TRS8MNNe3pmjilonRy9OSdJdCPl5DhN/view?usp=sharing) |
+| YolactEdge | R-50-FPN | 27.0| - | 30.7 | 140.3 | [download](https://drive.google.com/file/d/15TRS8MNNe3pmjilonRy9OSdJdCPl5DhN/view?usp=sharing) |
 | YOLACT | R-101-FPN | 29.8 | 33.5 | 6.6 | 36.5 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) |
-| YolactEdge | R-101-FPN | 32.1 | - | 27.3 | 124.8 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) |
+| YolactEdge | R-101-FPN | 29.5 | - | 27.3 | 124.8 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) |
 
 ## Evaluation
 
