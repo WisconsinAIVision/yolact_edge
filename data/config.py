@@ -843,7 +843,7 @@ yolact_edge_vid_config = yolact_edge_config.copy({
         'num_groups': 1,
         'use_shuffle_cat': False,
         'base_backward': True,
-        'fine_tune_layers': 'flow_net,spa,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
+        'fine_tune_layers': 'flow_net,flow_net_pre_convs,spa,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
         'selected_layers': [1, 2],
         'warp_mode': 'flow',
         'model': 'mini',
@@ -852,6 +852,16 @@ yolact_edge_vid_config = yolact_edge_config.copy({
         'use_computed_P3': True,
         'use_spa': True,
         'fm_loss_loc': 'L+P',
+    })
+})
+
+yolact_edge_vid_minimal_config = yolact_edge_vid_config.copy({
+    'name': 'yolact_edge_vid_minimal',
+    'torch2trt_spa': False,
+    'flow': yolact_edge_vid_config.flow.copy({
+        'fine_tune_layers': 'flow_net,flow_net_pre_convs,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
+        'use_spa': False,
+        'feature_matching_loss': None,
     })
 })
 
