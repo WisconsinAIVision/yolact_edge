@@ -868,8 +868,8 @@ yolact_edge_vid_minimal_config = yolact_edge_vid_config.copy({
 yolact_edge_vid_trainflow_config = yolact_edge_vid_config.copy({
     'name': 'yolact_edge_vid_trainflow',
     'dataset': flying_chairs_dataset,
-    'lr': 1e-3,
-    'max_iter': 750000,
+    'lr': 2e-4,
+    'max_iter': 400000,
     'flow': yolact_edge_vid_config.flow.copy({
         'train_flow': True,
         'base_backward': False,
