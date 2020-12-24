@@ -854,10 +854,11 @@ def build_flow_convs(encode_layers, in_features, out_features, stride=1, groups=
 
 
 class FlowNetMini(ScriptModuleWrapper):
-    __constants__ = ['interpolation_mode', 'skip_flow']
+    __constants__ = ['interpolation_mode', 'use_shuffle_cat', 'skip_flow']
     def __init__(self, in_features):
         super().__init__()
         self.interpolation_mode = cfg.fpn.interpolation_mode
+        self.use_shuffle_cat = cfg.flow.use_shuffle_cat
 
         self.conv1 = build_flow_convs(cfg.flow.encode_layers[0], in_features, cfg.flow.encode_channels, groups=cfg.flow.num_groups)
         self.conv2 = build_flow_convs(cfg.flow.encode_layers[1], cfg.flow.encode_channels, cfg.flow.encode_channels * 2, stride=2)
@@ -887,7 +888,10 @@ class FlowNetMini(ScriptModuleWrapper):
     def forward(self, target_feat, source_feat):
         preds: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
-        concat0 = shuffle_cat(target_feat, source_feat)
+        if self.use_shuffle_cat:
+            concat0 = shuffle_cat(target_feat, source_feat)
+        else:
+            concat0 = torch.cat((target_feat, source_feat), dim=1)
 
         out_conv1 = self.conv1(concat0)
         out_conv2 = self.conv2(out_conv1)
