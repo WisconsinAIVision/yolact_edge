@@ -12,11 +12,11 @@
 
 **For a real-time demo and more samples, check out our [demo video](https://www.youtube.com/watch?v=GBCK9SrcCLM).**
 
-[
-  ![example-gif-1](data/yolact_edge_example_1.gif)
-  ![example-gif-2](data/yolact_edge_example_2.gif)
-  ![example-gif-3](data/yolact_edge_example_3.gif)
-](https://www.youtube.com/watch?v=GBCK9SrcCLM)
+[![example-gif-1](data/yolact_edge_example_1.gif)](https://www.youtube.com/watch?v=GBCK9SrcCLM)
+
+[![example-gif-2](data/yolact_edge_example_2.gif)](https://www.youtube.com/watch?v=GBCK9SrcCLM)
+
+[![example-gif-3](data/yolact_edge_example_3.gif)](https://www.youtube.com/watch?v=GBCK9SrcCLM)
 
 ## Installation
 
