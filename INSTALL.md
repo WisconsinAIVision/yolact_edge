@@ -28,7 +28,8 @@
    ```Shell
    # Cython needs to be installed before pycocotools
    pip install cython
-   pip install opencv-python pillow pycocotools matplotlib
+   pip install opencv-python pillow matplotlib
+   pip install git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools&subdirectory=PythonAPI"
    pip install GitPython termcolor tensorboard
    ```
  - Clone this repository and enter it:
