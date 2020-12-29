@@ -37,6 +37,9 @@ python3 eval.py --trained_model=./weights/yolact_edge_vid_847_50000.pth
 # '--coco_transfer' is used to convert the models trained with YOLACT to be compatible with YolactEdge.
 python3 eval.py --coco_transfer --trained_model=./weights/yolact_edge_54_800000.pth
 
+# Evaluate YolactEdge without TensorRT optimization with '_pytorch' configs.
+python3 eval.py --config yolact_edge_pytorch_config --coco_transfer --trained_model=./weights/yolact_edge_54_800000.pth
+
 # Output a COCO JSON file for the COCO test-dev. The command will create './results/bbox_detections.json' and './results/mask_detections.json' for detection and instance segmentation respectively. These files can then be submitted to the website for evaluation.
 python3 eval.py --coco_transfer --trained_model=./weights/yolact_edge_54_800000.pth --dataset=coco2017_testdev_dataset --output_coco_json
 ```
