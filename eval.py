@@ -574,7 +574,13 @@ def badhash(x):
 def evalimage(net:Yolact, path:str, save_path:str=None):
     frame = torch.from_numpy(cv2.imread(path)).cuda().float()
     batch = FastBaseTransform()(frame.unsqueeze(0))
-    preds = net(batch)
+
+    if cfg.flow.warp_mode != 'none':
+        assert False, "Evaluating the image with a video-based model. If you believe this is a problem, please report a issue at GitHub, thanks."
+
+    extras = {"backbone": "full", "interrupt": False, "keep_statistics": False, "moving_statistics": None}
+
+    preds = net(batch, extras=extras)["pred_outs"]
 
     img_numpy = prep_display(preds, frame, None, None, undo_transform=False)
     
@@ -673,7 +679,7 @@ def evalvideo(net:Yolact, path:str):
                 with torch.no_grad():
                     net_outs = net(imgs, extras=extras)
             frame_idx += 1
-            # return frames, net(imgs)
+
             return frames, net_outs["pred_outs"]
 
     def prep_frame(inp):
