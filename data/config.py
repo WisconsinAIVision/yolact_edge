@@ -856,7 +856,7 @@ yolact_edge_vid_config = yolact_edge_config.copy({
         'num_groups': 1,
         'use_shuffle_cat': False,
         'base_backward': True,
-        'fine_tune_layers': 'flow_net,spa,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
+        'fine_tune_layers': 'flow_net,flow_net_pre_convs,spa,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
         'selected_layers': [1, 2],
         'warp_mode': 'flow',
         'model': 'mini',
@@ -898,8 +898,8 @@ yolact_edge_vid_minimal_config = yolact_edge_vid_config.copy({
 yolact_edge_vid_trainflow_config = yolact_edge_vid_config.copy({
     'name': 'yolact_edge_vid_trainflow',
     'dataset': flying_chairs_dataset,
-    'lr': 1e-3,
-    'max_iter': 750000,
+    'lr': 2e-4,
+    'max_iter': 400000,
     'flow': yolact_edge_vid_config.flow.copy({
         'train_flow': True,
         'base_backward': False,
