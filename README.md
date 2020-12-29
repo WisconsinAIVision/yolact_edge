@@ -106,6 +106,48 @@ python train.py --config=yolact_edge_config --resume=weights/yolact_edge_10_3210
 python train.py --help
 ```
 
+### Custom Datasets
+You can also train on your own dataset by following these steps:
+ - Depending on the type of your dataset, create a COCO-style (image) or YTVIS-style (video) Object Detection JSON annotation file for your dataset. The specification for this can be found here for [COCO](http://cocodataset.org/#format-data) and [YTVIS](https://github.com/youtubevos/cocoapi) respectively. Note that we don't use some fields, so the following may be omitted:
+   - `info`
+   - `liscense`
+   - Under `image`: `license, flickr_url, coco_url, date_captured`
+   - `categories` (we use our own format for categories, see below)
+ - Create a definition for your dataset under `dataset_base` in `data/config.py` (see the comments in `dataset_base` for an explanation of each field):
+```Python
+my_custom_dataset = dataset_base.copy({
+    'name': 'My Dataset',
+
+    'train_images': 'path_to_training_images',
+    'train_info':   'path_to_training_annotation',
+
+    'valid_images': 'path_to_validation_images',
+    'valid_info':   'path_to_validation_annotation',
+
+    'has_gt': True,
+    'class_names': ('my_class_id_1', 'my_class_id_2', 'my_class_id_3', ...),
+
+    # below is only needed for YTVIS-style video dataset.
+
+    # whether samples all frames or key frames only.
+    'use_all_frames': False,
+
+    # the following four lines define the frame sampling strategy for the given dataset.
+    'frame_offset_lb': 1,
+    'frame_offset_ub': 4,
+    'frame_offset_multiplier': 1,
+    'all_frame_direction': 'allway',
+
+    # 1 of K frames is annotated
+    'images_per_video': 5,
+
+    # declares a video dataset
+    'is_video': True
+})
+```
+ - Note that: class IDs in the annotation file should start at 1 and increase sequentially on the order of `class_names`. If this isn't the case for your annotation file (like in COCO), see the field `label_map` in `dataset_base`.
+ - Finally, in `yolact_edge_config` in the same file, change the value for `'dataset'` to `'my_custom_dataset'` or whatever you named the config object above. Then you can use any of the training commands in the previous section.
+
 ## Citation
 
 If you use this code base in your work, please consider citing:
