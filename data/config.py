@@ -218,9 +218,6 @@ youtube_vis_dataset = dataset_base.copy({
     'valid_info': './data/YoutubeVIS/annotations/valid.v4.json',
     'valid_images': './data/YoutubeVIS/valid_all_frames/v4/',
 
-    'train_medium_motion': './data/YoutubeVIS/annotations/train.v4.medium.json',
-    'train_large_motion': './data/YoutubeVIS/annotations/train.v4.large.json',
-
     'images_per_video': 5,
     'is_video': True
 })
