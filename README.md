@@ -79,9 +79,14 @@ python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_thresho
 python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --benchmark --max_images=1000
 ```
 
-### Inference without TensorRT
+### Inference without Calibration
+
+If you want to run inference command without calibration, you can either run with FP16-only TensorRT optimization, or without TensorRT optimization with corresponding configs. Refer to `data/config.py` for examples of such configs.
 
 ```Shell
+# Evaluate YolactEdge with FP16-only TensorRT optimization with '_fp16' configs.
+python3 eval.py --config yolact_edge_fp16_config --coco_transfer --trained_model=./weights/yolact_edge_54_800000.pth
+
 # Evaluate YolactEdge without TensorRT optimization with '_pytorch' configs.
 python3 eval.py --config yolact_edge_pytorch_config --coco_transfer --trained_model=./weights/yolact_edge_54_800000.pth
 ```
