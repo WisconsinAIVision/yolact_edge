@@ -121,6 +121,8 @@ def parse_args(argv=None):
                         help='Split pretrained FPN weights to two phase FPN.')
     parser.add_argument('--drop_weights', default=None, type=str,
                         help='Drop specified weights (split by comma) from existing model.')
+    parser.add_argument('--trt_batch_size', default=1, type=int,
+                        help='Maximum batch size to use during TRT conversion. This has to be greater than or equal to the batch size the model will take during inferece.')
 
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False)
@@ -1358,32 +1360,32 @@ if __name__ == '__main__':
 
         if cfg.torch2trt_backbone or cfg.torch2trt_backbone_int8:
             print("Converting backbone to TensorRT...")
-            net.to_tensorrt_backbone(cfg.torch2trt_backbone_int8, calibration_dataset=calibration_dataset)
+            net.to_tensorrt_backbone(cfg.torch2trt_backbone_int8, calibration_dataset=calibration_dataset, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_protonet or cfg.torch2trt_protonet_int8:
             print("Converting protonet to TensorRT...")
-            net.to_tensorrt_protonet(cfg.torch2trt_protonet_int8, calibration_dataset=calibration_protonet_dataset)
+            net.to_tensorrt_protonet(cfg.torch2trt_protonet_int8, calibration_dataset=calibration_protonet_dataset, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_fpn or cfg.torch2trt_fpn_int8:
             print("Converting FPN to TensorRT...")
-            net.to_tensorrt_fpn(cfg.torch2trt_fpn_int8)
+            net.to_tensorrt_fpn(cfg.torch2trt_fpn_int8, batch_size=args.trt_batch_size)
             # net.fpn_phase_1.to_tensorrt(cfg.torch2trt_fpn_int8)
             # net.fpn_phase_2.to_tensorrt(cfg.torch2trt_fpn_int8)
 
         if cfg.torch2trt_prediction_module or cfg.torch2trt_prediction_module_int8:
             print("Converting PredictionModule to TensorRT...")
-            net.to_tensorrt_prediction_head(cfg.torch2trt_prediction_module_int8)
+            net.to_tensorrt_prediction_head(cfg.torch2trt_prediction_module_int8, batch_size=args.trt_batch_size)
             # for prediction_layer in net.prediction_layers:
             #     prediction_layer.to_tensorrt(cfg.torch2trt_prediction_module_int8)
 
         if cfg.torch2trt_spa or cfg.torch2trt_spa_int8:
             print('Converting SPA to TensorRT...')
             assert not cfg.torch2trt_spa_int8
-            net.to_tensorrt_spa(cfg.torch2trt_spa_int8)
+            net.to_tensorrt_spa(cfg.torch2trt_spa_int8, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_flow_net or cfg.torch2trt_flow_net_int8:
             print('Converting flow_net to TensorRT...')
-            net.to_tensorrt_flow_net(cfg.torch2trt_flow_net_int8, calibration_dataset=calibration_flow_net_dataset)
+            net.to_tensorrt_flow_net(cfg.torch2trt_flow_net_int8, calibration_dataset=calibration_flow_net_dataset, batch_size=args.trt_batch_size)
 
         logger.info("Converted to TensorRT.")
 

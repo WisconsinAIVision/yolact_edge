@@ -733,11 +733,11 @@ class PredictionModuleTRTWrapper(nn.Module):
         pred_layer_w = pred_layer.parent[0] if pred_layer.parent[0] is not None else pred_layer
         self.pred_layer.load_state_dict(pred_layer_w.state_dict())
 
-    def to_tensorrt(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         input_sizes = [
                 (1, 256, 69, 69),
@@ -1700,71 +1700,71 @@ class Yolact(nn.Module):
         self.partial_backbone = backbone
         logger.info("Partial backbone created...")
     
-    def _get_trt_cache_path(self, module_name, int8_mode=False):
-        return "{}.{}{}.trt".format(self.model_path, module_name, ".int8_{}".format(cfg.torch2trt_max_calibration_images) if int8_mode else "")
+    def _get_trt_cache_path(self, module_name, int8_mode=False, batch_size=1):
+        return "{}.{}{}{}.trt".format(self.model_path, module_name, ".int8_{}".format(cfg.torch2trt_max_calibration_images) if int8_mode else "", "_bs_{}".format(batch_size))
 
-    def has_trt_cached_module(self, module_name, int8_mode=False):
-        module_path = self._get_trt_cache_path(module_name, int8_mode)
+    def has_trt_cached_module(self, module_name, int8_mode=False, batch_size=1):
+        module_path = self._get_trt_cache_path(module_name, int8_mode, batch_size)
         return os.path.isfile(module_path)
 
-    def load_trt_cached_module(self, module_name, int8_mode=False):
-        module_path = self._get_trt_cache_path(module_name, int8_mode)
+    def load_trt_cached_module(self, module_name, int8_mode=False, batch_size=1):
+        module_path = self._get_trt_cache_path(module_name, int8_mode, batch_size)
         if not os.path.isfile(module_path):
             return None
         module = TRTModule()
         module.load_state_dict(torch.load(module_path))
         return module
 
-    def save_trt_cached_module(self, module, module_name, int8_mode=False):
-        module_path = self._get_trt_cache_path(module_name, int8_mode)
+    def save_trt_cached_module(self, module, module_name, int8_mode=False, batch_size=1):
+        module_path = self._get_trt_cache_path(module_name, int8_mode, batch_size)
         torch.save(module.state_dict(), module_path)
 
-    def trt_load_if(self, module_name, trt_fn, trt_fn_params, int8_mode=False, parent=None):
+    def trt_load_if(self, module_name, trt_fn, trt_fn_params, int8_mode=False, parent=None, batch_size=1):
         if parent is None: parent=self
         if not hasattr(parent, module_name): return
         module = getattr(parent, module_name)
-        trt_cache = self.load_trt_cached_module(module_name, int8_mode)
+        trt_cache = self.load_trt_cached_module(module_name, int8_mode, batch_size=batch_size)
         if trt_cache is None:
             module = trt_fn(module, trt_fn_params)
-            self.save_trt_cached_module(module, module_name, int8_mode)
+            self.save_trt_cached_module(module, module_name, int8_mode, batch_size=batch_size)
         else:
             module = trt_cache
 
         setattr(parent, module_name, module)
 
-    def to_tensorrt_backbone(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_backbone(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts the Backbone to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         x = torch.ones((1, 3, cfg.max_size, cfg.max_size)).cuda()
         # self.backbone = trt_fn(self.backbone, [x])
         # self.partial_backbone = trt_fn(self.partial_backbone, [x])
-        self.trt_load_if("backbone", trt_fn, [x], int8_mode)
-        self.trt_load_if("partial_backbone", trt_fn, [x], int8_mode)
+        self.trt_load_if("backbone", trt_fn, [x], int8_mode, batch_size=batch_size)
+        self.trt_load_if("partial_backbone", trt_fn, [x], int8_mode, batch_size=batch_size)
 
-    def to_tensorrt_protonet(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_protonet(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts ProtoNet to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         x = torch.ones((1, 256, 69, 69)).cuda()
         # self.proto_net = trt_fn(self.proto_net, [x])
-        self.trt_load_if("proto_net", trt_fn, [x], int8_mode)
+        self.trt_load_if("proto_net", trt_fn, [x], int8_mode, batch_size=batch_size)
 
-    def to_tensorrt_fpn(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_fpn(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts FPN to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         self.lat_layer = self.fpn_phase_1.lat_layers[-1]
 
@@ -1783,7 +1783,7 @@ class Yolact(nn.Module):
         else:
             raise ValueError("Backbone: {} is not currently supported with TensorRT.".format(cfg.backbone.name))
 
-        self.trt_load_if("fpn_phase_1", trt_fn, x, int8_mode)
+        self.trt_load_if("fpn_phase_1", trt_fn, x, int8_mode, batch_size=batch_size)
 
         if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101":
             x = [
@@ -1800,7 +1800,7 @@ class Yolact(nn.Module):
         else:
             raise ValueError("Backbone: {} is not currently supported with TensorRT.".format(cfg.backbone.name))
 
-        self.trt_load_if("fpn_phase_2", trt_fn, x, int8_mode)
+        self.trt_load_if("fpn_phase_2", trt_fn, x, int8_mode, batch_size=batch_size)
 
         trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
 
@@ -1811,49 +1811,49 @@ class Yolact(nn.Module):
         else:
             raise ValueError("Backbone: {} is not currently supported with TensorRT.".format(cfg.backbone.name))
 
-        self.trt_load_if("lat_layer", trt_fn, [x], int8_mode=False)
+        self.trt_load_if("lat_layer", trt_fn, [x], int8_mode=False, batch_size=batch_size)
 
-    def to_tensorrt_prediction_head(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_prediction_head(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts Prediction Head to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         for idx, pred_layer in enumerate(self.prediction_layers):
             pred_layer = PredictionModuleTRTWrapper(pred_layer)
-            pred_layer.to_tensorrt()
+            pred_layer.to_tensorrt(batch_size=batch_size)
             self.prediction_layers[idx] = pred_layer
 
-    def to_tensorrt_spa(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_spa(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts SPA to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         c3 = torch.ones((1, 256, 69, 69)).cuda()
         f2 = torch.ones((1, 256, 35, 35)).cuda()
         f3 = torch.ones((1, 256, 18, 18)).cuda()
 
-        self.trt_load_if("spa", trt_fn, [c3, f2, f3], int8_mode, parent=self.spa)
+        self.trt_load_if("spa", trt_fn, [c3, f2, f3], int8_mode, parent=self.spa, batch_size=batch_size)
 
-    def to_tensorrt_flow_net(self, int8_mode=False, calibration_dataset=None):
+    def to_tensorrt_flow_net(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         """Converts FlowNet to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
 
         lateral_channels = cfg.fpn.num_features
         if len(cfg.flow.reduce_channels) > 0:
             lateral_channels = cfg.flow.reduce_channels[-1]
         x = torch.ones((1, lateral_channels * 2, 69, 69)).cuda()
-        self.trt_load_if("flow_net", trt_fn, [x], int8_mode, parent=self.flow_net)
+        self.trt_load_if("flow_net", trt_fn, [x], int8_mode, parent=self.flow_net, batch_size=batch_size)
 
     def forward(self, x, extras=None):
         """ The input should be of size [batch_size, 3, img_h, img_w] """

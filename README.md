@@ -105,10 +105,11 @@ python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth
 ### Video
 ```Shell
 # Display a video in real-time. "--video_multiframe" will process that many frames at once for improved performance.
-python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --video=my_video.mp4
+# If video_multiframe > 1, then the trt_batch_size should be increased to match it or surpass it. 
+python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=my_video.mp4
 
 # Display a webcam feed in real-time. If you have multiple webcams pass the index of the webcam you want instead of 0.
-python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --video=0
+python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=0
 
 # Process a video and save it to another file. This is unoptimized.
 python eval.py --coco_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video=input_video.mp4:output_video.mp4
