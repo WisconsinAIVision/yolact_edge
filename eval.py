@@ -1184,7 +1184,8 @@ if __name__ == '__main__':
         set_dataset(args.dataset)
 
     from utils.logging_helper import setup_logger
-    logger = setup_logger("yolact.eval")
+    setup_logger(logging_level=logging.INFO)
+    logger = logging.getLogger("yolact.eval")
 
     with torch.no_grad():
         if not os.path.exists('results'):
@@ -1228,7 +1229,9 @@ if __name__ == '__main__':
         net.eval()
         logger.info('Model loaded.')
 
-        logger.info("Converting to TensorRT...")
+        use_tensorrt_conversion = any([cfg.torch2trt_backbone, cfg.torch2trt_backbone_int8, cfg.torch2trt_protonet, cfg.torch2trt_protonet_int8, cfg.torch2trt_fpn, cfg.torch2trt_fpn_int8, cfg.torch2trt_prediction_module, cfg.torch2trt_prediction_module_int8, cfg.torch2trt_spa, cfg.torch2trt_spa_int8, cfg.torch2trt_flow_net, cfg.torch2trt_flow_net_int8])
+        if use_tensorrt_conversion:
+            logger.info("Converting to TensorRT...")
 
         net.model_path = args.trained_model
 
@@ -1242,9 +1245,9 @@ if __name__ == '__main__':
             if (not cfg.torch2trt_backbone_int8 or net.has_trt_cached_module('backbone', True)) and \
                 (not cfg.torch2trt_protonet_int8 or net.has_trt_cached_module('proto_net', True)) and \
                     (not cfg.torch2trt_flow_net_int8 or net.has_trt_cached_module('flow_net', True)):
-                print('Skipping generation of calibration dataset for backbone/flow_net because there is cache...')
+                logger.debug('Skipping generation of calibration dataset for backbone/flow_net because there is cache...')
             else:
-                print('Generating calibration dataset for backbone of {} images...'.format(cfg.torch2trt_max_calibration_images))
+                logger.debug('Generating calibration dataset for backbone of {} images...'.format(cfg.torch2trt_max_calibration_images))
 
                 if cfg.dataset.name == "YouTube VIS":
                     calib_dataset = YoutubeVIS(image_path=cfg.dataset.train_images,
@@ -1278,7 +1281,7 @@ if __name__ == '__main__':
                     else:
                         cfg.dataset = old_dataset
 
-                    print('Calibrating with {} images...'.format(cfg.torch2trt_max_calibration_images))
+                    logger.debug('Calibrating with {} images...'.format(cfg.torch2trt_max_calibration_images))
                     dataset_indices = list(range(cfg.torch2trt_max_calibration_images))
                     calibration_dataset = [calibration.pull_item(image_idx)[0] for image_idx in dataset_indices]
                     calibration_dataset = torch.stack(calibration_dataset)
@@ -1289,9 +1292,9 @@ if __name__ == '__main__':
         n_images_per_batch = 1
         if cfg.torch2trt_protonet_int8:
             if net.has_trt_cached_module('proto_net', True):
-                print('Skipping generation of calibration dataset for protonet because there is cache...')
+                logger.debug('Skipping generation of calibration dataset for protonet because there is cache...')
             else:
-                print('Generating calibration dataset for protonet with {} images...'.format(cfg.torch2trt_max_calibration_images))
+                logger.debug('Generating calibration dataset for protonet with {} images...'.format(cfg.torch2trt_max_calibration_images))
                 calibration_protonet_dataset = []
 
                 def forward_hook(self, inputs, outputs):
@@ -1301,7 +1304,7 @@ if __name__ == '__main__':
 
         if (cfg.torch2trt_protonet_int8 or cfg.torch2trt_flow_net_int8):
             if (not cfg.torch2trt_protonet_int8 or net.has_trt_cached_module('proto_net', True)) and (not cfg.torch2trt_flow_net_int8 or net.has_trt_cached_module('flow_net', True)):
-                print('Skipping generation of calibration dataset for protonet/flow_net because there is cache...')
+                logger.debug('Skipping generation of calibration dataset for protonet/flow_net because there is cache...')
             else:
                 with torch.no_grad():
                     laterals = []
@@ -1324,16 +1327,16 @@ if __name__ == '__main__':
 
         if cfg.torch2trt_protonet_int8:
             if net.has_trt_cached_module('proto_net', True):
-                print('Skipping generation of calibration dataset for protonet because there is cache...')
+                logger.debug('Skipping generation of calibration dataset for protonet because there is cache...')
             else:
                 proto_net_handle.remove()
                 calibration_protonet_dataset = torch.cat(calibration_protonet_dataset, dim=0)
 
         if cfg.torch2trt_flow_net_int8:
             if net.has_trt_cached_module('flow_net', True):
-                print('Skipping generation of calibration dataset for flow_net because there is cache...')
+                logger.debug('Skipping generation of calibration dataset for flow_net because there is cache...')
             else:
-                print('Generating calibration dataset for flow_net with {} images...'.format(cfg.torch2trt_max_calibration_images))
+                logger.debug('Generating calibration dataset for flow_net with {} images...'.format(cfg.torch2trt_max_calibration_images))
                 calibration_flow_net_dataset = []
 
                 def forward_hook(self, inputs, outputs):
@@ -1359,35 +1362,36 @@ if __name__ == '__main__':
                 calibration_flow_net_dataset = torch.cat(calibration_flow_net_dataset, dim=0)
 
         if cfg.torch2trt_backbone or cfg.torch2trt_backbone_int8:
-            print("Converting backbone to TensorRT...")
+            logger.info("Converting backbone to TensorRT...")
             net.to_tensorrt_backbone(cfg.torch2trt_backbone_int8, calibration_dataset=calibration_dataset, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_protonet or cfg.torch2trt_protonet_int8:
-            print("Converting protonet to TensorRT...")
+            logger.info("Converting protonet to TensorRT...")
             net.to_tensorrt_protonet(cfg.torch2trt_protonet_int8, calibration_dataset=calibration_protonet_dataset, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_fpn or cfg.torch2trt_fpn_int8:
-            print("Converting FPN to TensorRT...")
+            logger.info("Converting FPN to TensorRT...")
             net.to_tensorrt_fpn(cfg.torch2trt_fpn_int8, batch_size=args.trt_batch_size)
             # net.fpn_phase_1.to_tensorrt(cfg.torch2trt_fpn_int8)
             # net.fpn_phase_2.to_tensorrt(cfg.torch2trt_fpn_int8)
 
         if cfg.torch2trt_prediction_module or cfg.torch2trt_prediction_module_int8:
-            print("Converting PredictionModule to TensorRT...")
+            logger.info("Converting PredictionModule to TensorRT...")
             net.to_tensorrt_prediction_head(cfg.torch2trt_prediction_module_int8, batch_size=args.trt_batch_size)
             # for prediction_layer in net.prediction_layers:
             #     prediction_layer.to_tensorrt(cfg.torch2trt_prediction_module_int8)
 
         if cfg.torch2trt_spa or cfg.torch2trt_spa_int8:
-            print('Converting SPA to TensorRT...')
+            logger.info('Converting SPA to TensorRT...')
             assert not cfg.torch2trt_spa_int8
             net.to_tensorrt_spa(cfg.torch2trt_spa_int8, batch_size=args.trt_batch_size)
 
         if cfg.torch2trt_flow_net or cfg.torch2trt_flow_net_int8:
-            print('Converting flow_net to TensorRT...')
+            logger.info('Converting flow_net to TensorRT...')
             net.to_tensorrt_flow_net(cfg.torch2trt_flow_net_int8, calibration_dataset=calibration_flow_net_dataset, batch_size=args.trt_batch_size)
 
-        logger.info("Converted to TensorRT.")
+        if use_tensorrt_conversion:
+            logger.info("Converted to TensorRT.")
 
         if args.cuda:
             net = net.cuda()

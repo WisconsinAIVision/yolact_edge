@@ -1342,6 +1342,9 @@ class Yolact(nn.Module):
         if cfg.freeze_bn:
             self.freeze_bn()
 
+        if not mode:
+            return
+        
         if cfg.flow is not None and cfg.flow.fine_tune_layers is not None:
             self.fine_tune_layers()
 
@@ -1509,14 +1512,14 @@ class Yolact(nn.Module):
             return
 
         logger = logging.getLogger("yolact.model.load")
-        logger.info("Creating partial backbone...")
+        logger.debug("Creating partial backbone...")
 
         backbone = construct_backbone(cfg.backbone)
         backbone.load_state_dict(self.backbone.state_dict())
         backbone.layers = backbone.layers[:2]
 
         self.partial_backbone = backbone
-        logger.info("Partial backbone created...")
+        logger.debug("Partial backbone created...")
     
     def _get_trt_cache_path(self, module_name, int8_mode=False, batch_size=1):
         return "{}.{}{}{}.trt".format(self.model_path, module_name, ".int8_{}".format(cfg.torch2trt_max_calibration_images) if int8_mode else "", "_bs_{}".format(batch_size))
