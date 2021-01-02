@@ -187,56 +187,7 @@ class PredictionModule(nn.Module):
         self.priors = None
         self.last_conv_size = None
 
-    def to_tensorrt(self, int8_mode=False):
-        """Converts the bbox, conf, and mask layer of the PredictionModule
-           into TRTModules.
-        """
-
-        # Each PredictionModule takes a particular input shape.
-        # Torch2TRT optimizes based on the input shape so we need to
-        # make sure that we feed it the same shape that it will receive
-        # during testing phase.
-        input_sizes = [
-                (1, 256, 69, 69),
-                (1, 256, 35, 35),
-                (1, 256, 18, 18),
-                (1, 256, 9, 9),
-                (1, 256, 5, 5),
-        ]
-
-        x = torch.ones(input_sizes[self.index]).cuda()
-
-        if int8_mode:
-            trt_fn = partial(torch2trt, int8_mode=True, strict_type_constraints=True)
-        else:
-            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
-
-        if self.index == 0 and cfg.share_prediction_module:
-            self.upfeature_old  = self.upfeature
-            self.bbox_layer_old = self.bbox_layer
-            self.conf_layer_old = self.conf_layer
-            self.mask_layer_old = self.mask_layer
-
-            self.upfeature  = trt_fn(self.upfeature, [x])
-            self.bbox_layer = trt_fn(self.bbox_layer, [x])
-            self.conf_layer = trt_fn(self.conf_layer, [x])
-            self.mask_layer = trt_fn(self.mask_layer, [x])
-        elif self.index > 0 and self.parent is not None and cfg.share_prediction_module:
-            self.bbox_extra = self.parent[0].bbox_extra
-            self.conf_extra = self.parent[0].conf_extra
-            self.mask_extra = self.parent[0].mask_extra
-
-            self.upfeature  = trt_fn(self.parent[0].upfeature_old, [x])
-            self.bbox_layer = trt_fn(self.parent[0].bbox_layer_old, [x])
-            self.conf_layer = trt_fn(self.parent[0].conf_layer_old, [x])
-            self.mask_layer = trt_fn(self.parent[0].mask_layer_old, [x])
-
-            self.parent = [None]
-        else:
-            raise NotImplementedError("to_tensorrt doesn't currently work when we're not"
-                                      "sharing the prediction module")
-
-    def forward(self, x, extras=None):
+    def forward(self, x):
         """
         Args:
             - x: The convOut from a layer in the backbone network
@@ -250,9 +201,6 @@ class PredictionModule(nn.Module):
         """
         # In case we want to use another module's layers
         src = self if self.parent[0] is None else self.parent[0]
-
-        if extras is not None:
-            assert type(extras) == dict
         
         conv_h = x.size(2)
         conv_w = x.size(3)
@@ -277,15 +225,6 @@ class PredictionModule(nn.Module):
 
         bbox = src.bbox_layer(bbox_x).permute(0, 2, 3, 1).contiguous().view(x.size(0), -1, 4)
         conf = src.conf_layer(conf_x).permute(0, 2, 3, 1).contiguous().view(x.size(0), -1, self.num_classes)
-
-        if extras is not None and 'conf_hist' in extras:
-            conf_hist = extras['conf_hist'].copy()
-            _, _, h, w = bbox_x.size()
-            conf_spatial = conf.view(x.size(0), h, w, -1).contiguous().permute(0, 3, 1, 2)
-            conf_hist.append(conf_spatial)
-            stacked_conf = torch.stack(conf_hist, dim=0)
-            conf = torch.mean(stacked_conf, dim=0)
-            conf = conf.permute(0, 2, 3, 1).contiguous().view(x.size(0), -1, self.num_classes)
 
         if cfg.eval_mask_branch:
             mask = src.mask_layer(mask_x).permute(0, 2, 3, 1).contiguous().view(x.size(0), -1, self.mask_dim)
@@ -362,83 +301,10 @@ class PredictionModule(nn.Module):
         return self.priors
 
 
-class PredictionModuleTRT(nn.Module):
-    """
-    The (c) prediction module adapted from DSSD:
-    https://arxiv.org/pdf/1701.06659.pdf
-
-    Note that this is slightly different to the module in the paper
-    because the Bottleneck block actually has a 3x3 convolution in
-    the middle instead of a 1x1 convolution. Though, I really can't
-    be arsed to implement it myself, and, who knows, this might be
-    better.
-
-    Args:
-        - in_channels:   The input feature size.
-        - out_channels:  The output feature size (must be a multiple of 4).
-        - aspect_ratios: A list of lists of priorbox aspect ratios (one list per scale).
-        - scales:        A list of priorbox scales relative to this layer's convsize.
-                         For instance: If this layer has convouts of size 30x30 for
-                                       an image of size 600x600, the 'default' (scale
-                                       of 1) for this layer would produce bounding
-                                       boxes with an area of 20x20px. If the scale is
-                                       .5 on the other hand, this layer would consider
-                                       bounding boxes with area 10x10px, etc.
-        - parent:        If parent is a PredictionModule, this module will use all the layers
-                         from parent instead of from this module.
-    """
+class PredictionModuleTRT(PredictionModule):
     
     def __init__(self, in_channels, out_channels=1024, aspect_ratios=[[1]], scales=[1], parent=None, index=0):
-        super().__init__()
-
-        self.num_classes = cfg.num_classes
-        self.mask_dim    = cfg.mask_dim
-        self.num_priors  = sum(len(x) for x in aspect_ratios)
-        self.parent      = [parent] # Don't include this in the state dict
-        self.index       = index
-
-        if cfg.mask_proto_prototypes_as_features:
-            in_channels += self.mask_dim
-        
-        if parent is None:
-            if cfg.extra_head_net is None:
-                out_channels = in_channels
-            else:
-                self.upfeature, out_channels = make_net(in_channels, cfg.extra_head_net)
-
-            if cfg.use_prediction_module:
-                self.block = Bottleneck(out_channels, out_channels // 4)
-                self.conv = nn.Conv2d(out_channels, out_channels, kernel_size=1, bias=True)
-                self.bn = nn.BatchNorm2d(out_channels)
-
-            self.bbox_layer = nn.Conv2d(out_channels, self.num_priors * 4,                **cfg.head_layer_params)
-            self.conf_layer = nn.Conv2d(out_channels, self.num_priors * self.num_classes, **cfg.head_layer_params)
-            self.mask_layer = nn.Conv2d(out_channels, self.num_priors * self.mask_dim,    **cfg.head_layer_params)
-
-            if cfg.use_instance_coeff:
-                self.inst_layer = nn.Conv2d(out_channels, self.num_priors * cfg.num_instance_coeffs, **cfg.head_layer_params)
-            
-            # What is this ugly lambda doing in the middle of all this clean prediction module code?
-            def make_extra(num_layers):
-                if num_layers == 0:
-                    return lambda x: x
-                else:
-                    # Looks more complicated than it is. This just creates an array of num_layers alternating conv-relu
-                    return nn.Sequential(*sum([[
-                        nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-                        nn.ReLU(inplace=True)
-                    ] for _ in range(num_layers)], []))
-
-            self.bbox_extra, self.conf_extra, self.mask_extra = [make_extra(x) for x in cfg.extra_layers]
-            
-            if cfg.mask_type == mask_type.lincomb and cfg.mask_proto_coeff_gate:
-                self.gate_layer = nn.Conv2d(out_channels, self.num_priors * self.mask_dim, kernel_size=3, padding=1)
-
-        self.aspect_ratios = aspect_ratios
-        self.scales = scales
-
-        self.priors = None
-        self.last_conv_size = None
+        super().__init__(in_channels, out_channels, aspect_ratios, scales, parent, index)
 
         if cfg.mask_proto_coeff_activation == torch.tanh:
             self.activation_func = nn.Tanh()
@@ -507,55 +373,7 @@ class PredictionModuleTRT(nn.Module):
                     gate = self.gate_layer(x).permute(0, 2, 3, 1).contiguous().view(x.size(0), -1, self.mask_dim)
                     mask = mask * torch.sigmoid(gate)
 
-        # preds = { 'loc': bbox, 'conf': conf, 'mask': mask, 'priors': priors }
-
-        # if cfg.use_instance_coeff:
-        #     preds['inst'] = inst
-
         return bbox, conf, mask
-        
-        # return preds
-    
-    def make_priors(self, conv_h, conv_w):
-        """ Note that priors are [x,y,width,height] where (x,y) is the center of the box. """
-        
-        with timer.env('makepriors'):
-            if self.last_conv_size != (conv_w, conv_h):
-                prior_data = []
-
-                # Iteration order is important (it has to sync up with the convout)
-                for j, i in product(range(conv_h), range(conv_w)):
-                    # +0.5 because priors are in center-size notation
-                    x = (i + 0.5) / conv_w
-                    y = (j + 0.5) / conv_h
-                    
-                    for scale, ars in zip(self.scales, self.aspect_ratios):
-                        for ar in ars:
-                            if not cfg.backbone.preapply_sqrt:
-                                ar = sqrt(ar)
-
-                            if cfg.backbone.use_pixel_scales:
-                                if type(cfg.max_size) == tuple:
-                                    width, height = cfg.max_size
-                                    w = scale * ar / width
-                                    h = scale / ar / height
-                                else:
-                                    w = scale * ar / cfg.max_size
-                                    h = scale / ar / cfg.max_size
-                            else:
-                                w = scale * ar / conv_w
-                                h = scale / ar / conv_h
-                            
-                            # This is for backward compatability with a bug where I made everything square by accident
-                            if cfg.backbone.use_square_anchors:
-                                h = w
-
-                            prior_data += [x, y, w, h]
-                
-                self.priors = torch.Tensor(prior_data).view(-1, 4)
-                self.last_conv_size = (conv_w, conv_h)
-        
-        return self.priors
 
 
 def conv_bn_lrelu(in_features, out_features, kernel_size=3, stride=1, padding=1, dilation=1, batch_norm=True):
