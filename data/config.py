@@ -141,6 +141,7 @@ dataset_base = Config({
     'train_images': './data/coco/images/',
     'train_info':   'path_to_annotation_file',
 
+    # Calibration image folder for TensorRT INT8 conversion.
     'calib_images': './data/coco/calib_images/',
     
     # Validation images and annotations.
@@ -212,6 +213,9 @@ youtube_vis_dataset = dataset_base.copy({
     'train_images': './data/YoutubeVIS/train_all_frames/JPEGImages/',
     'use_all_frames': False,
 
+    # Calibration image folder for TensorRT INT8 conversion.
+    # Because we need two frames (prev, next) to estimate flows and calibrate the warping module, we need to specify a parent folder for calibration images, and two sub-folders for previous and next frames correspondingly.
+    # Use colon(:) to split folder (sub-folders).
     'calib_images': './data/YoutubeVIS/calib_images/:prev:next',
 
     'frame_offset_lb': 1,
