@@ -31,7 +31,6 @@ import cv2
 import logging
 
 import math
-from copy import deepcopy
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -121,6 +120,8 @@ def parse_args(argv=None):
                         help='Split pretrained FPN weights to two phase FPN.')
     parser.add_argument('--drop_weights', default=None, type=str,
                         help='Drop specified weights (split by comma) from existing model.')
+    parser.add_argument('--calib_images', default=None, type=str,
+                        help='Directory of images for TensorRT INT8 calibration, for explanation of this field, please refer to `calib_images` in `data/config.py`.')
     parser.add_argument('--trt_batch_size', default=1, type=int,
                         help='Maximum batch size to use during TRT conversion. This has to be greater than or equal to the batch size the model will take during inferece.')
 
@@ -1249,45 +1250,36 @@ if __name__ == '__main__':
             else:
                 logger.debug('Generating calibration dataset for backbone of {} images...'.format(cfg.torch2trt_max_calibration_images))
 
-                if cfg.dataset.name == "YouTube VIS":
-                    calib_dataset = YoutubeVIS(image_path=cfg.dataset.train_images,
-                                            info_file=cfg.dataset.train_info,
-                                            configs=cfg.dataset,
-                                            transform=BaseTransformVideo(MEANS), has_gt=cfg.dataset.has_gt)
+                calib_images = cfg.dataset.calib_images
+                if args.calib_images is not None:
+                    calib_images = args.calib_images
 
-                    calibration_data_cpu = [calib_dataset.pull_video(video_idx, full_video=True, max_images=5) for video_idx in list(range(cfg.torch2trt_max_calibration_images))]
+                def pull_calib_dataset(calib_folder, transform=BaseTransform()):
+                    images = []
+                    for p in Path(calib_folder).glob('*'): 
+                        path = str(p)
+                        img = cv2.imread(path)
+                        height, width, _ = img.shape
 
-                    calibration_dataset = [vid[0][0][0] for vid in calibration_data_cpu]
-                    calibration_dataset = torch.stack(calibration_dataset)
+                        img, _, _, _ = transform(img, np.zeros((1, height, width), dtype=np.float), np.array([[0, 0, 1, 1]]),
+                            {'num_crowds': 0, 'labels': np.array([0])})
 
-                    calibration_next_dataset = [vid[0][4][0] for vid in calibration_data_cpu]
-                    calibration_next_dataset = torch.stack(calibration_next_dataset)
+                        images.append(torch.from_numpy(img).permute(2, 0, 1))
 
+                    calibration_dataset = torch.stack(images)
                     if args.cuda:
                         calibration_dataset = calibration_dataset.cuda()
-                        calibration_next_dataset = calibration_next_dataset.cuda()
+                    return calibration_dataset
+
+                if ':' in calib_images:
+                    calib_dir, prev_folder, next_folder = calib_images.split(':')
+                    prev_dir = os.path.join(calib_dir, prev_folder)
+                    next_dir = os.path.join(calib_dir, next_folder)
+
+                    calibration_dataset = pull_calib_dataset(prev_dir)
+                    calibration_next_dataset = pull_calib_dataset(next_dir)
                 else:
-                    # Save the old dataset configuration just in case we need to restore.
-                    old_dataset = deepcopy(cfg.dataset)
-
-                    # Set dataset to COCO 2017 otherwise when we're evaluating on test-dev this will fail
-                    set_dataset("coco2017_dataset")
-                    calibration = COCODetection(cfg.dataset.train_images, cfg.dataset.train_info,
-                                                transform=BaseTransform(), has_gt=cfg.dataset.has_gt)
-
-                    # Revert dataset back to what it's supposed to be: 
-                    if args.dataset is not None:
-                        set_dataset(args.dataset)
-                    else:
-                        cfg.dataset = old_dataset
-
-                    logger.debug('Calibrating with {} images...'.format(cfg.torch2trt_max_calibration_images))
-                    dataset_indices = list(range(cfg.torch2trt_max_calibration_images))
-                    calibration_dataset = [calibration.pull_item(image_idx)[0] for image_idx in dataset_indices]
-                    calibration_dataset = torch.stack(calibration_dataset)
-
-                    if args.cuda:
-                        calibration_dataset = calibration_dataset.cuda()
+                    calibration_dataset = pull_calib_dataset(calib_images)
 
         n_images_per_batch = 1
         if cfg.torch2trt_protonet_int8:

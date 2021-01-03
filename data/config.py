@@ -140,6 +140,8 @@ dataset_base = Config({
     # Training images and annotations
     'train_images': './data/coco/images/',
     'train_info':   'path_to_annotation_file',
+
+    'calib_images': './data/coco/calib_images/',
     
     # Validation images and annotations.
     'valid_images': './data/coco/images/',
@@ -209,6 +211,8 @@ youtube_vis_dataset = dataset_base.copy({
     'train_info': './data/YoutubeVIS/annotations/train.v4.json',
     'train_images': './data/YoutubeVIS/train_all_frames/JPEGImages/',
     'use_all_frames': False,
+
+    'calib_images': './data/YoutubeVIS/calib_images/:prev:next',
 
     'frame_offset_lb': 1,
     'frame_offset_ub': 4,
