@@ -809,28 +809,6 @@ yolact_edge_config = yolact_base_config.copy({
     'torch2trt_prediction_module': True,
 })
 
-yolact_edge_fp16_config = yolact_edge_config.copy({
-    'name': 'yolact_edge_fp16',
-
-    'torch2trt_backbone': True,
-    'torch2trt_backbone_int8': False,
-    'torch2trt_protonet': True,
-    'torch2trt_protonet_int8': False,
-})
-
-yolact_edge_pytorch_config = yolact_edge_config.copy({
-    'name': 'yolact_edge_pytorch',
-
-    'torch2trt_backbone': False,
-    'torch2trt_backbone_int8': False,
-    'torch2trt_protonet': False,
-    'torch2trt_protonet_int8': False,
-    'torch2trt_fpn': False,
-    'torch2trt_fpn_int8': False,
-    'torch2trt_prediction_module': False,
-    'torch2trt_prediction_module_int8': False,
-})
-
 yolact_edge_mobilenetv2_config = yolact_edge_config.copy({
     'name': 'yolact_edge_mobilenetv2',
 
@@ -880,34 +858,6 @@ yolact_edge_vid_config = yolact_edge_config.copy({
         'use_spa': True,
         'fm_loss_loc': 'L+P',
     })
-})
-
-yolact_edge_vid_fp16_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_vid_fp16',
-
-    'torch2trt_backbone': True,
-    'torch2trt_backbone_int8': False,
-    'torch2trt_protonet': True,
-    'torch2trt_protonet_int8': False,
-    'torch2trt_flow_net': True,
-    'torch2trt_flow_net_int8': False,
-})
-
-yolact_edge_vid_pytorch_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_vid_pytorch',
-
-    'torch2trt_backbone': False,
-    'torch2trt_backbone_int8': False,
-    'torch2trt_protonet': False,
-    'torch2trt_protonet_int8': False,
-    'torch2trt_fpn': False,
-    'torch2trt_fpn_int8': False,
-    'torch2trt_prediction_module': False,
-    'torch2trt_prediction_module_int8': False,
-    'torch2trt_spa': False,
-    'torch2trt_spa_int8': False,
-    'torch2trt_flow_net': False,
-    'torch2trt_flow_net_int8': False,
 })
 
 yolact_edge_vid_minimal_config = yolact_edge_vid_config.copy({

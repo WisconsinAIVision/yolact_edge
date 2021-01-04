@@ -124,6 +124,10 @@ def parse_args(argv=None):
                         help='Directory of images for TensorRT INT8 calibration, for explanation of this field, please refer to `calib_images` in `data/config.py`.')
     parser.add_argument('--trt_batch_size', default=1, type=int,
                         help='Maximum batch size to use during TRT conversion. This has to be greater than or equal to the batch size the model will take during inferece.')
+    parser.add_argument('--disable_tensorrt', default=False, dest='disable_tensorrt', action='store_true',
+                        help='Don\'t use tensorrt optimization when specified.')
+    parser.add_argument('--use_fp16_tensorrt', default=False, dest='use_fp16_tensorrt', action='store_true',
+                        help='Don\'t use tensorrt INT8 optimization when specified.')
 
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False)
@@ -1221,6 +1225,18 @@ if __name__ == '__main__':
         else:
             dataset = None        
 
+        torch2trt_flags = ['torch2trt_backbone', 'torch2trt_backbone_int8', 'torch2trt_protonet', 'torch2trt_protonet_int8', 'torch2trt_fpn', 'torch2trt_fpn_int8', 'torch2trt_prediction_module', 'torch2trt_prediction_module_int8', 'torch2trt_spa', 'torch2trt_spa_int8', 'torch2trt_flow_net', 'torch2trt_flow_net_int8']
+
+        if args.disable_tensorrt:
+            for key in torch2trt_flags:
+                setattr(cfg, key, False)
+        
+        if args.use_fp16_tensorrt:
+            for key in torch2trt_flags:
+                if 'int8' in key and getattr(cfg, key, False):
+                    setattr(cfg, key, False)
+                    setattr(cfg, key[:-5], True)
+
         logger.info('Loading model...')
         net = Yolact(training=False)
         if args.trained_model is not None:
@@ -1230,7 +1246,7 @@ if __name__ == '__main__':
         net.eval()
         logger.info('Model loaded.')
 
-        use_tensorrt_conversion = any([cfg.torch2trt_backbone, cfg.torch2trt_backbone_int8, cfg.torch2trt_protonet, cfg.torch2trt_protonet_int8, cfg.torch2trt_fpn, cfg.torch2trt_fpn_int8, cfg.torch2trt_prediction_module, cfg.torch2trt_prediction_module_int8, cfg.torch2trt_spa, cfg.torch2trt_spa_int8, cfg.torch2trt_flow_net, cfg.torch2trt_flow_net_int8])
+        use_tensorrt_conversion = any(getattr(cfg, key, False) for key in torch2trt_flags)
         if use_tensorrt_conversion:
             logger.info("Converting to TensorRT...")
 
