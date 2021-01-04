@@ -837,6 +837,20 @@ yolact_edge_mobilenetv2_config = yolact_edge_config.copy({
     'backbone': mobilenetv2_backbone
 })
 
+yolact_edge_mobilenetv2_pytorch_config = yolact_edge_config.copy({
+    'name': 'yolact_edge_mobilenetv2_pytorch',
+    'backbone': mobilenetv2_backbone,
+
+    'torch2trt_backbone': False,
+    'torch2trt_backbone_int8': False,
+    'torch2trt_protonet': False,
+    'torch2trt_protonet_int8': False,
+    'torch2trt_fpn': False,
+    'torch2trt_fpn_int8': False,
+    'torch2trt_prediction_module': False,
+    'torch2trt_prediction_module_int8': False
+})
+
 yolact_edge_vid_config = yolact_edge_config.copy({
     'name': 'yolact_edge_vid',
     'dataset': youtube_vis_dataset.copy({
@@ -983,6 +997,20 @@ yolact_resnet152_config = yolact_base_config.copy({
 yolact_edge_resnet50_config = yolact_edge_config.copy({
     'name': 'yolact_edge_resnet50',
     'backbone': yolact_resnet50_config.backbone
+})
+
+yolact_edge_resnet50_pytorch_config = yolact_edge_config.copy({
+    'name': 'yolact_edge_resnet50',
+    'backbone': yolact_resnet50_config.backbone,
+
+    'torch2trt_backbone': False,
+    'torch2trt_backbone_int8': False,
+    'torch2trt_protonet': False,
+    'torch2trt_protonet_int8': False,
+    'torch2trt_fpn': False,
+    'torch2trt_fpn_int8': False,
+    'torch2trt_prediction_module': False,
+    'torch2trt_prediction_module_int8': False
 })
 
 yolact_edge_vid_resnet50_config = yolact_edge_vid_config.copy({
