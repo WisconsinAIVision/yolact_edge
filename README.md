@@ -150,6 +150,19 @@ python train.py --config=yolact_edge_config --resume=weights/yolact_edge_10_3210
 python train.py --help
 ```
 
+### Training on video dataset
+```Shell
+# Pre-train the image based model
+python train.py --config=yolact_edge_youtubevis_config
+
+# Train the flow (warping) module
+python train.py --config=yolact_edge_vid_trainflow_config --resume=./weights/yolact_edge_youtubevis_847_50000.pth
+
+# Fine tune the network jointly
+python train.py --config=yolact_edge_vid_config --resume=./weights/yolact_edge_vid_trainflow_144_100000.pth
+```
+
+
 ### Custom Datasets
 You can also train on your own dataset by following these steps:
  - Depending on the type of your dataset, create a COCO-style (image) or YTVIS-style (video) Object Detection JSON annotation file for your dataset. The specification for this can be found here for [COCO](http://cocodataset.org/#format-data) and [YTVIS](https://github.com/youtubevos/cocoapi) respectively. Note that we don't use some fields, so the following may be omitted:
