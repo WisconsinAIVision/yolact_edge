@@ -1224,14 +1224,12 @@ class Yolact(nn.Module):
                         if key.startswith(drop_key):
                             del state_dict[key]
 
-                if args.coco_transfer:
+                if args.yolact_transfer or args.coco_transfer:
                     if key.startswith('fpn.lat_layers'):
                         state_dict[key.replace('fpn.', 'fpn_phase_1.')] = state_dict[key]
                         del state_dict[key]
                     elif key.startswith('fpn.') and key in state_dict:
                         state_dict[key.replace('fpn.', 'fpn_phase_2.')] = state_dict[key]
-                        del state_dict[key]
-                    elif 'COCO' not in cfg.dataset.name and (key.startswith('semantic_seg_conv.') or key.startswith('prediction_layers.0.conf_layer')):
                         del state_dict[key]
 
         keys_not_exist = []
@@ -1271,6 +1269,9 @@ class Yolact(nn.Module):
         if len(keys_mismatch) > 0:
             logger.warning("Some parameters in the checkpoint have a different shape in the current model, "
                            "and are initialized as they should be: {}".format(", ".join(keys_mismatch)))
+
+        if args.coco_transfer:
+            logger.warning("`--coco_transfer` is deprecated, please use `--yolact_transfer` instead.")
 
         self.load_state_dict(state_dict)
 

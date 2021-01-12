@@ -116,8 +116,10 @@ def parse_args(argv=None):
                         help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
     parser.add_argument('--detect', default=False, dest='detect', action='store_true',
                         help='Don\'t evauluate the mask branch at all and only do object detection. This only works for --display and --benchmark.')
+    parser.add_argument('--yolact_transfer', dest='yolact_transfer', action='store_true',
+                        help='Split pretrained FPN weights to two phase FPN (for models trained by YOLACT).')
     parser.add_argument('--coco_transfer', dest='coco_transfer', action='store_true',
-                        help='Split pretrained FPN weights to two phase FPN.')
+                        help='[Deprecated] Split pretrained FPN weights to two phase FPN (for models trained by YOLACT).')
     parser.add_argument('--drop_weights', default=None, type=str,
                         help='Drop specified weights (split by comma) from existing model.')
     parser.add_argument('--calib_images', default=None, type=str,

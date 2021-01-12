@@ -80,8 +80,10 @@ parser.add_argument('--keep_latest_interval', default=100000, type=int,
                     help='When --keep_latest is on, don\'t delete the latest file at these intervals. This should be a multiple of save_interval or 0.')
 parser.add_argument('--dataset', default=None, type=str,
                     help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
+parser.add_argument('--yolact_transfer', dest='yolact_transfer', action='store_true',
+                    help='Split pretrained FPN weights to two phase FPN (for models trained by YOLACT).')
 parser.add_argument('--coco_transfer', dest='coco_transfer', action='store_true',
-                    help='Split pretrained FPN weights to two phase FPN.')
+                    help='[Deprecated] Split pretrained FPN weights to two phase FPN (for models trained by YOLACT).')
 parser.add_argument('--drop_weights', default=None, type=str,
                     help='Drop specified weights (split by comma) from existing model.')
 parser.add_argument('--interrupt_no_save', dest='interrupt_no_save', action='store_true',
