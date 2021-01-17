@@ -4,6 +4,7 @@ import torch
 import cv2
 from pathlib import Path
 import math
+import os
 
 def convert_to_tensorrt(net, cfg, args, transform):
     logger = logging.getLogger("yolact.eval")
@@ -46,10 +47,11 @@ def convert_to_tensorrt(net, cfg, args, transform):
             if args.calib_images is not None:
                 calib_images = args.calib_images
 
-            def pull_calib_dataset(calib_folder, transform=transform):
+            def pull_calib_dataset(calib_folder, transform=transform, max_calibration_images=cfg.torch2trt_max_calibration_images):
                 images = []
-                for p in Path(calib_folder).glob('*'): 
-                    path = str(p)
+                paths = [str(x) for x in Path(calib_folder).glob('*')]
+                paths = paths[:max_calibration_images]
+                for path in paths:
                     img = cv2.imread(path)
                     height, width, _ = img.shape
 
