@@ -190,9 +190,19 @@ class Detect(object):
         idx = idx[:cfg.max_num_detections]
         scores = scores[:cfg.max_num_detections]
 
-        classes = classes[idx]
-        boxes = boxes[idx]
-        masks = masks[idx]
+        try:
+            classes = classes[idx]
+            boxes = boxes[idx]
+            masks = masks[idx]
+        except IndexError:
+
+            import logging
+            logger = logging.getLogger("yolact.layers.detect")
+            logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Using `torch.index_select` to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
+
+            classes = torch.index_select(classes, 0, idx)
+            boxes = torch.index_select(boxes, 0, idx)
+            masks = torch.index_select(masks, 0, idx)
 
         return boxes, masks, classes, scores
 
