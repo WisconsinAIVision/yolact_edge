@@ -168,12 +168,10 @@ class Detect(object):
         try:
             classes = classes[keep]
         except IndexError:
-            if not hasattr(self, 'index_error_encountered') and self.index_error_encountered:
-                setattr(self, 'index_error_encountered', True)
 
-                import logging
-                logger = logging.getLogger("yolact.layers.detect")
-                logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
+            import logging
+            logger = logging.getLogger("yolact.layers.detect")
+            logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
 
             classes = torch.flatten(classes, end_dim=1)
             boxes = torch.flatten(boxes, end_dim=1)
