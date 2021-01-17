@@ -163,7 +163,25 @@ class Detect(object):
 
         # Assign each kept detection to its corresponding class
         classes = torch.arange(num_classes, device=boxes.device)[:, None].expand_as(keep)
-        classes = classes[keep]
+
+        # This try-except block aims to fix the IndexError that we might encounter when we train on custom datasets and evaluate with TensorRT enabled. See https://github.com/haotian-liu/yolact_edge/issues/27.
+        try:
+            classes = classes[keep]
+        except IndexError:
+            if not hasattr(self, 'index_error_encountered') and self.index_error_encountered:
+                setattr(self, 'index_error_encountered', True)
+
+                import logging
+                logger = logging.getLogger("yolact.layers.detect")
+                logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
+
+            classes = torch.flatten(classes, end_dim=1)
+            boxes = torch.flatten(boxes, end_dim=1)
+            masks = torch.flatten(masks, end_dim=1)
+            scores = torch.flatten(scores, end_dim=1)
+            keep = torch.flatten(keep, end_dim=1)
+
+            classes = classes[keep]
 
         boxes = boxes[keep]
         masks = masks[keep]
