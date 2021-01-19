@@ -167,6 +167,9 @@ class Detect(object):
         # This try-except block aims to fix the IndexError that we might encounter when we train on custom datasets and evaluate with TensorRT enabled. See https://github.com/haotian-liu/yolact_edge/issues/27.
         try:
             classes = classes[keep]
+            boxes = boxes[keep]
+            masks = masks[keep]
+            scores = scores[keep]
         except IndexError:
 
             import logging
@@ -179,11 +182,12 @@ class Detect(object):
             scores = torch.flatten(scores, end_dim=1)
             keep = torch.flatten(keep, end_dim=1)
 
-            classes = classes[keep]
+            idx = torch.nonzero(keep, as_tuple=True)[0]
 
-        boxes = boxes[keep]
-        masks = masks[keep]
-        scores = scores[keep]
+            classes = torch.index_select(classes, 0, idx)
+            boxes = torch.index_select(boxes, 0, idx)
+            masks = torch.index_select(masks, 0, idx)
+            scores = torch.index_select(scores, 0, idx)
         
         # Only keep the top cfg.max_num_detections highest scores across all classes
         scores, idx = scores.sort(0, descending=True)
