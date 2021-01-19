@@ -171,10 +171,8 @@ class Detect(object):
             masks = masks[keep]
             scores = scores[keep]
         except IndexError:
-
-            import logging
-            logger = logging.getLogger("yolact.layers.detect")
-            logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
+            from utils.logging_helper import log_once
+            log_once(self, "issue_27_flatten", name="yolact.layers.detect", message="Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
 
             classes = torch.flatten(classes, end_dim=1)
             boxes = torch.flatten(boxes, end_dim=1)
@@ -199,10 +197,8 @@ class Detect(object):
             boxes = boxes[idx]
             masks = masks[idx]
         except IndexError:
-
-            import logging
-            logger = logging.getLogger("yolact.layers.detect")
-            logger.warning("Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Using `torch.index_select` to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
+            from utils.logging_helper import log_once
+            log_once(self, "issue_27_index_select", name="yolact.layers.detect", message="Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Using `torch.index_select` to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
 
             classes = torch.index_select(classes, 0, idx)
             boxes = torch.index_select(boxes, 0, idx)
