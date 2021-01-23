@@ -50,6 +50,18 @@ COCO models:
 | YOLACT | R-101-FPN | 29.8 | 33.5 | 6.6 | 36.5 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) \| [mirror](https://1drv.ms/u/s!AkSxI62eEcpbiG8nFXtvgAkI-c1H?e=HyfH8Z) |
 | YolactEdge | R-101-FPN | 29.5 | - | 27.3 | 124.8 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) \| [mirror](https://1drv.ms/u/s!AkSxI62eEcpbiG8nFXtvgAkI-c1H?e=HyfH8Z) |
 
+## Getting Started
+
+Follow the [installation instructions](INSTALL.md) to set up required environment for running YolactEdge.
+
+See instructions to [evaluate](https://github.com/haotian-liu/yolact_edge#evaluation) and [train](https://github.com/haotian-liu/yolact_edge#training) with YolactEdge.
+
+### Colab Notebook
+
+Try out our [Colab Notebook](https://colab.research.google.com/drive/1Mzst4q4Y-SQszIHhlEv1CkT4hwja4GNw?usp=sharing) with a live demo to learn about basic usage.
+
+If you are interested in evaluating YolactEdge with TensorRT, we provide another [Colab Notebook](https://colab.research.google.com/drive/1nEZAYnGbF7VetqltAlUTyAGTI71MvPPF?usp=sharing) with TensorRT environment configuration on Colab.
+
 ## Evaluation
 
 ### Quantitative Results
