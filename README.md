@@ -70,11 +70,10 @@ If you are interested in evaluating YolactEdge with TensorRT, we provide another
 python3 eval.py --trained_model=./weights/yolact_edge_vid_847_50000.pth
 
 # Evaluate on the entire COCO validation set.
-# '--yolact_transfer' is used to convert the models trained with YOLACT to be compatible with YolactEdge.
-python3 eval.py --yolact_transfer --trained_model=./weights/yolact_edge_54_800000.pth
+python3 eval.py --trained_model=./weights/yolact_edge_54_800000.pth
 
 # Output a COCO JSON file for the COCO test-dev. The command will create './results/bbox_detections.json' and './results/mask_detections.json' for detection and instance segmentation respectively. These files can then be submitted to the website for evaluation.
-python3 eval.py --yolact_transfer --trained_model=./weights/yolact_edge_54_800000.pth --dataset=coco2017_testdev_dataset --output_coco_json
+python3 eval.py --trained_model=./weights/yolact_edge_54_800000.pth --dataset=coco2017_testdev_dataset --output_coco_json
 ```
 
 ### Qualitative Results
@@ -88,16 +87,16 @@ python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_thresho
 ```Shell
 # Benchmark the trained model on the COCO validation set.
 # Run just the raw model on the first 1k images of the validation set
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --benchmark --max_images=1000
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --benchmark --max_images=1000
 ```
 
 ### Notes
 
 #### Inference using models trained with YOLACT
-If you have a pre-trained model with [YOLACT](https://github.com/dbolya/yolact), and you want to take advantage of either TensorRT feature of YolactEdge, you can enable `--yolact_transfer` flag and specify the `yolact_edge_config`, and the script will automatically convert weights to be compatible.
+If you have a pre-trained model with [YOLACT](https://github.com/dbolya/yolact), and you want to take advantage of either TensorRT feature of YolactEdge, simply specify the `--config=yolact_edge_config` in command line options, and the code will automatically detect and convert the model weights to be compatible.
 
 ```Shell
-python3 eval.py --config yolact_edge_config --yolact_transfer --trained_model=./weights/yolact_base_54_800000.pth
+python3 eval.py --config=yolact_edge_config --trained_model=./weights/yolact_base_54_800000.pth
 ```
 
 
@@ -107,34 +106,34 @@ If you want to run inference command without calibration, you can either run wit
 
 ```Shell
 # Evaluate YolactEdge with FP16-only TensorRT optimization with '--use_fp16_tensorrt' option (replace all INT8 optimization with FP16).
-python3 eval.py --config yolact_edge_config --use_fp16_tensorrt --yolact_transfer --trained_model=./weights/yolact_edge_54_800000.pth
+python3 eval.py --use_fp16_tensorrt --trained_model=./weights/yolact_edge_54_800000.pth
 
 # Evaluate YolactEdge without TensorRT optimization with '--disable_tensorrt' option.
-python3 eval.py --config yolact_edge_config --disable_tensorrt --yolact_transfer --trained_model=./weights/yolact_edge_54_800000.pth
+python3 eval.py --disable_tensorrt --trained_model=./weights/yolact_edge_54_800000.pth
 ```
 
 ### Images
 ```Shell
 # Display qualitative results on the specified image.
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --image=my_image.png
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --image=my_image.png
 
 # Process an image and save it to another file.
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --image=input_image.png:output_image.png
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --image=input_image.png:output_image.png
 
 # Process a whole folder of images.
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --images=path/to/input/folder:path/to/output/folder
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --images=path/to/input/folder:path/to/output/folder
 ```
 ### Video
 ```Shell
 # Display a video in real-time. "--video_multiframe" will process that many frames at once for improved performance.
 # If video_multiframe > 1, then the trt_batch_size should be increased to match it or surpass it. 
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=my_video.mp4
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=my_video.mp4
 
 # Display a webcam feed in real-time. If you have multiple webcams pass the index of the webcam you want instead of 0.
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=0
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video_multiframe=2 --trt_batch_size 2 --video=0
 
 # Process a video and save it to another file. This is unoptimized.
-python eval.py --yolact_transfer --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video=input_video.mp4:output_video.mp4
+python eval.py --trained_model=weights/yolact_edge_54_800000.pth --score_threshold=0.3 --top_k=100 --video=input_video.mp4:output_video.mp4
 ```
 Use the help option to see a description of all available command line arguments:
 ```Shell

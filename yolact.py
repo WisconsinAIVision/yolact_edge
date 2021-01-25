@@ -1207,6 +1207,8 @@ class Yolact(nn.Module):
 
         if args is not None and args.drop_weights is not None:
             drop_weight_keys = args.drop_weights.split(',')
+        
+        transfered_from_yolact = False
 
         for key in list(state_dict.keys()):
             # For backward compatability, remove these (the new variable is called layers)
@@ -1224,13 +1226,14 @@ class Yolact(nn.Module):
                         if key.startswith(drop_key):
                             del state_dict[key]
 
-                if args.yolact_transfer or args.coco_transfer:
-                    if key.startswith('fpn.lat_layers'):
-                        state_dict[key.replace('fpn.', 'fpn_phase_1.')] = state_dict[key]
-                        del state_dict[key]
-                    elif key.startswith('fpn.') and key in state_dict:
-                        state_dict[key.replace('fpn.', 'fpn_phase_2.')] = state_dict[key]
-                        del state_dict[key]
+                if key.startswith('fpn.lat_layers'):
+                    transfered_from_yolact = True
+                    state_dict[key.replace('fpn.', 'fpn_phase_1.')] = state_dict[key]
+                    del state_dict[key]
+                elif key.startswith('fpn.') and key in state_dict:
+                    transfered_from_yolact = True
+                    state_dict[key.replace('fpn.', 'fpn_phase_2.')] = state_dict[key]
+                    del state_dict[key]
 
         keys_not_exist = []
         keys_not_used = []
@@ -1270,8 +1273,8 @@ class Yolact(nn.Module):
             logger.warning("Some parameters in the checkpoint have a different shape in the current model, "
                            "and are initialized as they should be: {}".format(", ".join(keys_mismatch)))
 
-        if args.coco_transfer:
-            logger.warning("`--coco_transfer` is deprecated, please use `--yolact_transfer` instead.")
+        if args.coco_transfer or args.yolact_transfer:
+            logger.warning("`--coco_transfer` or `--yolact_transfer` is no longer needed. The code will automatically detect and convert YOLACT-trained weights now.")
 
         self.load_state_dict(state_dict)
 
