@@ -36,7 +36,7 @@ class Detect(object):
         self.cross_class_nms = False
         self.use_fast_nms = False
 
-    def __call__(self, predictions, extras=None):
+    def __call__(self, predictions):
         """
         Args:
              loc_data: (tensor) Loc preds from loc layers
@@ -75,7 +75,7 @@ class Detect(object):
 
             for batch_idx in range(batch_size):
                 decoded_boxes = decode(loc_data[batch_idx], prior_data)
-                result = self.detect(batch_idx, conf_preds, decoded_boxes, mask_data, inst_data, extras)
+                result = self.detect(batch_idx, conf_preds, decoded_boxes, mask_data, inst_data)
 
                 if result is not None and proto_data is not None:
                     result['proto'] = proto_data[batch_idx]
@@ -85,7 +85,7 @@ class Detect(object):
         return out
 
 
-    def detect(self, batch_idx, conf_preds, decoded_boxes, mask_data, inst_data, extras=None):
+    def detect(self, batch_idx, conf_preds, decoded_boxes, mask_data, inst_data):
         """ Perform nms for only the max scoring class that isn't background (class 0) """
         cur_scores = conf_preds[batch_idx, 1:, :]
         conf_scores, _ = torch.max(cur_scores, dim=0)
