@@ -37,7 +37,9 @@ class COCOAnnotationTransform(object):
         for obj in target:
             if 'bbox' in obj:
                 bbox = obj['bbox']
-                label_idx = self.label_map[obj['category_id']] - 1
+                label_idx = obj['category_id']
+                if label_idx >= 0:
+                    label_idx = self.label_map[label_idx] - 1
                 final_box = list(np.array([bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]])/scale)
                 final_box.append(label_idx)
                 res += [final_box]  # [xmin, ymin, xmax, ymax, label_idx]
@@ -159,6 +161,9 @@ class COCODetection(data.Dataset):
         crowd  = [x for x in target if     ('iscrowd' in x and x['iscrowd'])]
         target = [x for x in target if not ('iscrowd' in x and x['iscrowd'])]
         num_crowds = len(crowd)
+
+        for x in crowd:
+            x['category_id'] = -1
 
         # This is so we ensure that all crowd annotations are at the end of the array
         target += crowd
