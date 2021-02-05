@@ -1116,9 +1116,6 @@ class Yolact(nn.Module):
             # The include_last_relu=false here is because we might want to change it to another function
             self.proto_net, cfg.mask_dim = make_net(in_channels, cfg.mask_proto_net, include_last_relu=False)
 
-            if cfg.flow is not None and cfg.flow.proto_net_no_conflict:
-                self.proto_net_proxy, _ = make_net(in_channels, cfg.mask_proto_net, include_last_relu=False)
-
             if cfg.mask_proto_bias:
                 cfg.mask_dim += 1
 
@@ -1131,8 +1128,6 @@ class Yolact(nn.Module):
             if cfg.flow is not None:
                 self.fpn_phase_1 = FPN_phase_1([src_channels[i] for i in self.selected_layers])
                 self.fpn_phase_2 = FPN_phase_2([src_channels[i] for i in self.selected_layers])
-                if cfg.flow.fpn_no_conflict:
-                    self.fpn_phase_2_proxy = FPN_phase_2([src_channels[i] for i in self.selected_layers])
                 if cfg.flow.use_spa or cfg.flow.use_spa_both:
                     self.spa = SPA(len(self.selected_layers))
                 if cfg.flow.warp_mode == 'flow':
@@ -1168,22 +1163,6 @@ class Yolact(nn.Module):
                                     parent        = parent,
                                     index         = idx)
             self.prediction_layers.append(pred)
-
-        if cfg.flow is not None and cfg.flow.pred_heads_no_conflict:
-            self.prediction_layers_proxy = nn.ModuleList()
-
-            for idx, layer_idx in enumerate(self.selected_layers):
-                # If we're sharing prediction module weights, have every module's parent be the first one
-                parent = None
-                if cfg.share_prediction_module and idx > 0:
-                    parent = self.prediction_layers_proxy[0]
-
-                pred = PredictionModule(src_channels[layer_idx], src_channels[layer_idx],
-                                        aspect_ratios = cfg.backbone.pred_aspect_ratios[idx],
-                                        scales        = cfg.backbone.pred_scales[idx],
-                                        parent        = parent,
-                                        index         = idx)
-                self.prediction_layers_proxy.append(pred)
 
         # Extra parameters for the extra losses
         if cfg.use_class_existence_loss:
@@ -1391,7 +1370,6 @@ class Yolact(nn.Module):
         # feature matching loss
         if cfg.flow.feature_matching_loss is not None:
             def t(fea, layer_idx):
-                assert not cfg.flow.fpn_no_conflict
                 fpn_net = self.fpn_phase_2
                 pred_layer = fpn_net.pred_layers[layer_idx + 1]
                 bias = pred_layer.bias.detach() if pred_layer.bias is not None else None
@@ -1773,11 +1751,7 @@ class Yolact(nn.Module):
 
                     outs_wrapper["outs_phase_1"] = outs_phase_1.copy()
 
-                fpn_phase_2 = self.fpn_phase_2_proxy \
-                    if cfg.flow is not None and cfg.flow.fpn_no_conflict and extras["backbone"] == "partial" \
-                    else self.fpn_phase_2
-
-                outs = fpn_phase_2(*outs_phase_1)
+                outs = self.fpn_phase_2(*outs_phase_1)
                 if extras["backbone"] == "partial":
                     outs_wrapper["outs_phase_2"] = [out for out in outs]
                 else:
@@ -1800,10 +1774,7 @@ class Yolact(nn.Module):
                     grids = self.grid.repeat(proto_x.size(0), 1, 1, 1)
                     proto_x = torch.cat([proto_x, grids], dim=1)
 
-                if cfg.flow is not None and cfg.flow.proto_net_no_conflict and extras["backbone"] == "partial":
-                    proto_out = self.proto_net_proxy(proto_x)
-                else:
-                    proto_out = self.proto_net(proto_x)
+                proto_out = self.proto_net(proto_x)
 
                 proto_out = cfg.mask_proto_prototype_activation(proto_out)
 
@@ -1828,11 +1799,7 @@ class Yolact(nn.Module):
             if cfg.use_instance_coeff:
                 pred_outs['inst'] = []
 
-            prediction_layers = self.prediction_layers_proxy \
-                if cfg.flow is not None and cfg.flow.pred_heads_no_conflict and extras["backbone"] == "partial" \
-                else self.prediction_layers
-            
-            for idx, pred_layer in zip(self.selected_layers, prediction_layers):
+            for idx, pred_layer in zip(self.selected_layers, self.prediction_layers):
                 pred_x = outs[idx]
 
                 if cfg.mask_type == mask_type.lincomb and cfg.mask_proto_prototypes_as_features:
@@ -1843,8 +1810,8 @@ class Yolact(nn.Module):
                 # This is re-enabled during training or non-TRT inference.
                 if self.training or not (cfg.torch2trt_prediction_module or cfg.torch2trt_prediction_module_int8):
                     # A hack for the way dataparallel works
-                    if cfg.share_prediction_module and pred_layer is not prediction_layers[0]:
-                        pred_layer.parent = [prediction_layers[0]]
+                    if cfg.share_prediction_module and pred_layer is not self.prediction_layers[0]:
+                        pred_layer.parent = [self.prediction_layers[0]]
 
                 p = pred_layer(pred_x)
                 
