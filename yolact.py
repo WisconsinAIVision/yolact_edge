@@ -6,7 +6,8 @@ import numpy as np
 from functools import partial
 from itertools import product, chain
 from math import sqrt
-from typing import List, Tuple
+from typing import List, Tuple, Optional
+from torch import Tensor
 
 from data.config import cfg, mask_type
 from layers import Detect
@@ -36,7 +37,6 @@ torch.cuda.current_device()
 
 # As of March 10, 2019, Pytorch DataParallel still doesn't support JIT Script Modules
 use_jit = False if use_torch2trt else torch.cuda.device_count() <= 1
-NoneTensor = None if use_torch2trt else torch.Tensor()
 
 ScriptModuleWrapper = torch.jit.ScriptModule if use_jit else nn.Module
 script_method_wrapper = torch.jit.script_method if use_jit else lambda fn, _rcn=None: fn
@@ -814,7 +814,7 @@ class FlowNetMiniTRT(ScriptModuleWrapper):
 
 
 class SPA(ScriptModuleWrapper):
-    __constants__ = ['interpolation_mode', 'refine_convs', 'use_normalized_spa']
+    __constants__ = ['interpolation_mode', 'use_normalized_spa']
 
     def __init__(self, num_layers):
         super().__init__()
@@ -855,7 +855,7 @@ class SPA(ScriptModuleWrapper):
 
 
 class FPN_phase_1(ScriptModuleWrapper):
-    __constants__ = ['interpolation_mode', 'lat_layers']
+    __constants__ = ['interpolation_mode']
 
     def __init__(self, in_channels):
         super().__init__()
@@ -870,7 +870,8 @@ class FPN_phase_1(ScriptModuleWrapper):
         self.interpolation_mode = cfg.fpn.interpolation_mode
 
     @script_method_wrapper
-    def forward(self, x1=NoneTensor, x2=NoneTensor, x3=NoneTensor, x4=NoneTensor, x5=NoneTensor, x6=NoneTensor, x7=NoneTensor):
+    def forward(self, x1=None, x2=None, x3=None, x4=None, x5=None, x6=None, x7=None):
+        # type: (Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]) -> List[Tensor]
         """
         Args:
             - convouts (list): A list of convouts for the corresponding layers in in_channels.
@@ -879,20 +880,21 @@ class FPN_phase_1(ScriptModuleWrapper):
         """
 
         convouts_ = [x1, x2, x3, x4, x5, x6, x7]
+        # convouts = [x for x in convouts if x is not None]
         convouts = []
         j = 0
         while j < len(convouts_):
-            if convouts_[j] is not None and convouts_[j].size(0):
-                convouts.append(convouts_[j])
+            t = convouts_[j]
+            if t is not None:
+                convouts.append(t)
             j += 1
-        # convouts = [x for x in convouts if x is not None]
 
         out = []
-        lat_layers = []
+        lat_feats = []
         x = torch.zeros(1, device=convouts[0].device)
         for i in range(len(convouts)):
             out.append(x)
-            lat_layers.append(x)
+            lat_feats.append(x)
 
         # For backward compatability, the conv layers are stored in reverse but the input and output is
         # given in the correct order. Thus, use j=-i-1 for the input and output and i for the conv layers.
@@ -904,17 +906,17 @@ class FPN_phase_1(ScriptModuleWrapper):
                 _, _, h, w = convouts[j].size()
                 x = F.interpolate(x, size=(h, w), mode=self.interpolation_mode, align_corners=False)
             lat_j = lat_layer(convouts[j])
-            lat_layers[j] = lat_j
+            lat_feats[j] = lat_j
             x = x + lat_j
             out[j] = x
         
         for i in range(len(convouts)):
-            out.append(lat_layers[i])
+            out.append(lat_feats[i])
         return out
 
 
 class FPN_phase_2(ScriptModuleWrapper):
-    __constants__ = ['num_downsample', 'use_conv_downsample', 'pred_layers', 'downsample_layers']
+    __constants__ = ['num_downsample', 'use_conv_downsample']
 
     def __init__(self, in_channels):
         super().__init__()
@@ -938,7 +940,8 @@ class FPN_phase_2(ScriptModuleWrapper):
         self.use_conv_downsample = cfg.fpn.use_conv_downsample
 
     @script_method_wrapper
-    def forward(self, x1=NoneTensor, x2=NoneTensor, x3=NoneTensor, x4=NoneTensor, x5=NoneTensor, x6=NoneTensor, x7=NoneTensor):
+    def forward(self, x1=None, x2=None, x3=None, x4=None, x5=None, x6=None, x7=None):
+        # type: (Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]) -> List[Tensor]
         """
         Args:
             - convouts (list): A list of convouts for the corresponding layers in in_channels.
@@ -953,8 +956,9 @@ class FPN_phase_2(ScriptModuleWrapper):
         out = []
         j = 0
         while j < len(out_):
-            if out_[j] is not None and out_[j].size(0):
-                out.append(out_[j])
+            t = out_[j]
+            if t is not None:
+                out.append(t)
             j += 1
 
         len_convouts = len(out)
@@ -991,8 +995,7 @@ class FPN(ScriptModuleWrapper):
         - in_channels (list): For each conv layer you supply in the forward pass,
                               how many features will it have?
     """
-    __constants__ = ['interpolation_mode', 'num_downsample', 'use_conv_downsample',
-                     'lat_layers', 'pred_layers', 'downsample_layers']
+    __constants__ = ['interpolation_mode', 'num_downsample', 'use_conv_downsample']
 
     def __init__(self, in_channels):
         super().__init__()
