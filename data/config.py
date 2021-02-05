@@ -895,6 +895,7 @@ yolact_edge_youtubevis_config = yolact_edge_vid_config.copy({
     'lr': 5e-4,
     'lr_schedule': 'cosine',
     'max_iter': 500000,
+    'augment_expand': True,
     'flow': yolact_edge_vid_config.flow.copy({
         'warp_mode': 'none',
         'fine_tune_layers': None,
