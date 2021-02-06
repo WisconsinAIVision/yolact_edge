@@ -26,6 +26,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from utils.logging_helper import setup_logger
 import logging
+import random
 
 # Oof
 import eval as eval_script
@@ -52,6 +53,7 @@ parser.add_argument('--num_gpus', default=None, type=int,
                     help='Number of GPUs used in training')
 port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
 parser.add_argument("--dist_url", default="tcp://127.0.0.1:{}".format(port))
+parser.add_argument('--seed', default=42, type=int)
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning_rate', default=None, type=float,
@@ -142,6 +144,12 @@ def train(rank, args):
     if rank == 0:
         if not os.path.exists(args.save_folder):
             os.mkdir(args.save_folder)
+
+    # fix the seed for reproducibility
+    seed = args.seed + rank
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     # set up logger
     setup_logger(output=os.path.join(args.log_folder, cfg.name), distributed_rank=rank)
