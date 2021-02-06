@@ -495,7 +495,6 @@ flow_base = Config({
     'encode_layers': [[4, 1], [2], [4]],
     'encode_channels': 256,
     'fine_tune_layers': None,
-    'use_computed_P3': True,
     'warp_layers': "P4P5",
     'use_spa': False,
     'use_normalized_spa': False,
@@ -842,7 +841,6 @@ yolact_edge_vid_config = yolact_edge_config.copy({
         'model': 'mini',
         'use_pseudo_gt_flow_loss': False,
         'feature_matching_loss': 'cosine',
-        'use_computed_P3': True,
         'use_spa': True,
         'fm_loss_loc': 'L+P',
     })
