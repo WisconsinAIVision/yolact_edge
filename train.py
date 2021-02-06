@@ -15,8 +15,6 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.backends.cudnn as cudnn
-import torch.nn.init as init
 import torch.utils.data as data
 import numpy as np
 import argparse
@@ -53,7 +51,6 @@ parser.add_argument('--num_gpus', default=None, type=int,
                     help='Number of GPUs used in training')
 port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
 parser.add_argument("--dist_url", default="tcp://127.0.0.1:{}".format(port))
-parser.add_argument('--seed', default=42, type=int)
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
 parser.add_argument('--lr', '--learning_rate', default=None, type=float,
@@ -146,7 +143,7 @@ def train(rank, args):
             os.mkdir(args.save_folder)
 
     # fix the seed for reproducibility
-    seed = args.seed + rank
+    seed = args.random_seed + rank
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
@@ -260,21 +257,15 @@ def train(rank, args):
                                 negpos_ratio=3)
 
     if args.cuda:
-        cudnn.benchmark = True
         net.cuda(rank)
-        criterion.cuda(rank)
         net = nn.parallel.DistributedDataParallel(net, device_ids=[rank], output_device=rank, broadcast_buffers=False,
                                                   find_unused_parameters=True)
-        # net       = nn.DataParallel(net).cuda()
-        # criterion = nn.DataParallel(criterion).cuda()
 
     optimizer = optim.SGD(filter(lambda x: x.requires_grad, net.parameters()),
                           lr=args.lr, momentum=args.momentum,
                           weight_decay=args.decay)
 
     # loss counters
-    loc_loss = 0
-    conf_loss = 0
     iteration = max(args.start_iter, 0)
     w.set_step(iteration)
     last_time = time.time()
