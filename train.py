@@ -124,35 +124,6 @@ else:
     torch.set_default_tensor_type('torch.FloatTensor')
 
 
-class ScatterWrapper:
-    """ Input is any number of lists. This will preserve them through a dataparallel scatter. """
-    def __init__(self, *args):
-        for arg in args:
-            if not isinstance(arg, list):
-                print('Warning: ScatterWrapper got input of non-list type.')
-        self.args = args
-        self.batch_size = len(args[0])
-    
-    def make_mask(self):
-        out = torch.Tensor(list(range(self.batch_size))).long()
-        if args.cuda: return out.cuda()
-        else: return out
-    
-    def get_args(self, mask):
-        device = mask.device
-        mask = [int(x) for x in mask]
-        out_args = [[] for _ in self.args]
-
-        for out, arg in zip(out_args, self.args):
-            for idx in mask:
-                x = arg[idx]
-                if isinstance(x, torch.Tensor):
-                    x = x.to(device)
-                out.append(x)
-        
-        return out_args
-
-
 def multi_gpu_rescale(args):
     # auto rescale parameters when GPU count > 1 or batch size is not 8
     scale_factor = args.num_gpus * args.batch_size // 8
@@ -343,8 +314,7 @@ def train(rank, args):
         optimizer.zero_grad()
 
         out = net_outs["pred_outs"]
-        wrapper = ScatterWrapper(targets, masks, num_crowds)
-        losses = criterion(out, wrapper, wrapper.make_mask())
+        losses = criterion(out, targets, masks, num_crowds)
 
         losses = {k: v.mean() for k, v in losses.items()}  # Mean here because Dataparallel
 
@@ -453,25 +423,8 @@ def train(rank, args):
                     extras = {"backbone": "full", "interrupt": False,
                               "moving_statistics": {"aligned_feats": []}}
                     net_outs = net(images,extras=extras)
-                    out = net_outs["pred_outs"]
-                    # Compute Loss
-                    optimizer.zero_grad()
-
-                    wrapper = ScatterWrapper(targets, masks, num_crowds)
-                    losses = criterion(out, wrapper, wrapper.make_mask())
-
-                    losses = { k: v.mean() for k,v in losses.items() } # Mean here because Dataparallel
-                    loss = sum([losses[k] for k in losses])
-
-                    # Backprop
-                    loss.backward() # Do this to free up vram even if loss is not finite
-                    if torch.isfinite(loss).item():
-                        optimizer.step()
-
-                    # Add the loss to the moving average for bookkeeping
-                    for k in losses:
-                        loss_avgs[k].add(losses[k].item())
-                        w.add_scalar('joint/%s' % k, losses[k].item())
+                    run_name = "joint" if cfg.dataset.joint else "compute"
+                    losses = backward_and_log(run_name, net_outs, targets, masks, num_crowds)
 
                 # Forward Pass
                 if cfg.dataset.is_video:
@@ -705,8 +658,7 @@ def compute_validation_loss(net, data_loader, criterion):
             images, targets, masks, num_crowds = prepare_data(datum)
             out = net(images)
 
-            wrapper = ScatterWrapper(targets, masks, num_crowds)
-            _losses = criterion(out, wrapper, wrapper.make_mask())
+            _losses = criterion(out, targets, masks, num_crowds)
             
             for k, v in _losses.items():
                 v = v.mean().item()

@@ -43,7 +43,7 @@ class MultiBoxLoss(nn.Module):
         self.l1_expected_area = 20*20/70/70
         self.l1_alpha = 0.1
 
-    def forward(self, predictions, wrapper, wrapper_mask):
+    def forward(self, predictions, targets, masks, num_crowds):
         """Multibox Loss
         Args:
             predictions (tuple): A tuple containing loc preds, conf preds,
@@ -79,14 +79,10 @@ class MultiBoxLoss(nn.Module):
         else:
             inst_data = None
         
-        targets, masks, num_crowds = wrapper.get_args(wrapper_mask)
         labels = [None] * len(targets) # Used in sem segm loss
 
         batch_size = loc_data.size(0)
-        # This is necessary for training on multiple GPUs because
-        # DataParallel will cat the priors from each GPU together
-        priors = priors[:loc_data.size(1), :]
-        num_priors = (priors.size(0))
+        num_priors = priors.size(0)
         num_classes = self.num_classes
 
         # Match priors (default boxes) and ground truth boxes
