@@ -1128,7 +1128,7 @@ class Yolact(nn.Module):
             if cfg.flow is not None:
                 self.fpn_phase_1 = FPN_phase_1([src_channels[i] for i in self.selected_layers])
                 self.fpn_phase_2 = FPN_phase_2([src_channels[i] for i in self.selected_layers])
-                if cfg.flow.use_spa or cfg.flow.use_spa_both:
+                if cfg.flow.use_spa:
                     self.spa = SPA(len(self.selected_layers))
                 if cfg.flow.warp_mode == 'flow':
                     if cfg.flow.model == 'mini':

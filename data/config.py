@@ -492,18 +492,12 @@ fpn_base = Config({
 
 # ------------------------ FLOW DEFAULTS ------------------------ #
 flow_base = Config({
-    'selected_backbone': 0,
-    'layer_features': [128, 128, 96, 64, 32],
-    'patch_size': 3,
     'encode_layers': [[4, 1], [2], [4]],
     'encode_channels': 256,
     'fine_tune_layers': None,
-    'interpolate_upsample': False,
     'use_computed_P3': True,
     'warp_layers': "P4P5",
-    'flow_direct_downsample': False,
     'use_spa': False,
-    'use_spa_both': False,
     'use_normalized_spa': False,
     'use_shuffle_cat': False,
     'num_groups': 1,
@@ -512,9 +506,6 @@ flow_base = Config({
     'reduce_channels': [],
     'warp_mode': 'none',
     'flow_layer': 'each',
-    'warp_target': 'feature',
-    'warp_flow_layer': 'top',
-    'correlation': 'external',
     'base_backward': True,
     'feature_matching_loss': None,
     'fm_loss_loc': 'L',
