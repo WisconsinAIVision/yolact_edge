@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-import torch.distributed as dist
 from ..box_utils import decode, jaccard, index2d
 from utils import timer
 
@@ -10,8 +9,6 @@ import numpy as np
 
 import pyximport
 pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
-if dist.is_initialized():
-    dist.barrier()
 from utils.cython_nms import nms as cnms
 
 

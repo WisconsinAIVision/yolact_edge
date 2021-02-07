@@ -307,8 +307,6 @@ def train(rank, args):
                                             batch_sampler=joint_train_sampler)
         joint_data_loader_iter = iter(joint_data_loader)
 
-    dist.barrier()
-    
     save_path = lambda epoch, iteration: SavePath(cfg.name, epoch, iteration).get_path(root=args.save_folder)
     time_avg = MovingAverage()
     data_time_avg = MovingAverage(10)
@@ -353,7 +351,6 @@ def train(rank, args):
             while True:
                 data_start_time = time.perf_counter()
                 datum = next(data_loader_iter)
-                dist.barrier()
                 data_end_time = time.perf_counter()
                 data_time = data_end_time - data_start_time
                 if iteration != args.start_iter:
@@ -420,7 +417,6 @@ def train(rank, args):
                 elif cfg.dataset.joint or not cfg.dataset.is_video:
                     if cfg.dataset.joint:
                         joint_datum = next(joint_data_loader_iter)
-                        dist.barrier()
                         # Load training data
                         # Note, for training on multiple gpus this will use the custom replicate and gather I wrote up there
                         images, targets, masks, num_crowds = prepare_data(joint_datum)
@@ -593,7 +589,9 @@ time: {time}  data_time: {data_time}  lr: {lr}  {memory}\
                         if args.keep_latest_interval <= 0 or iteration % args.keep_latest_interval != args.save_interval:
                             logger.info('Deleting old save...')
                             os.remove(latest)
-            
+
+            dist.barrier()
+
             # This is done per epoch
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
@@ -602,6 +600,7 @@ time: {time}  data_time: {data_time}  lr: {lr}  {memory}\
                     dist.barrier()
 
     except KeyboardInterrupt:
+        dist.barrier()
         if args.interrupt_no_save:
             logger.info('No save on interrupt, just exiting...')
         elif rank == 0:
