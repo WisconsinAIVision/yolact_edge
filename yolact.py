@@ -1182,7 +1182,7 @@ class Yolact(nn.Module):
     
     def load_weights(self, path, args=None):
         """ Loads weights from a compressed save file. """
-        state_dict = torch.load(path, map_location=torch.device(torch.cuda.current_device()))
+        state_dict = torch.load(path, map_location='cpu')
 
         # Get all possible weights
         cur_state_dict = self.state_dict()
@@ -1268,7 +1268,7 @@ class Yolact(nn.Module):
     def init_weights(self, backbone_path):
         """ Initialize weights for training. """
         # Initialize the backbone with the pretrained weights.
-        self.backbone.init_backbone(backbone_path, map_location=torch.device(torch.cuda.current_device()))
+        self.backbone.init_backbone(backbone_path)
 
         conv_constants = getattr(nn.Conv2d(1, 1, 1), '__constants__')
         

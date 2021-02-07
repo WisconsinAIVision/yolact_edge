@@ -129,9 +129,9 @@ class ResNetBackbone(nn.Module):
                 outs.append(x)
         return outs
 
-    def init_backbone(self, path, map_location=None):
+    def init_backbone(self, path):
         """ Initializes the backbone weights for training. """
-        state_dict = torch.load(path, map_location=map_location)
+        state_dict = torch.load(path, map_location='cpu')
 
         # Replace layer1 -> layers.0 etc.
         keys = list(state_dict)
@@ -154,7 +154,7 @@ class ResNetBackboneGN(ResNetBackbone):
     def __init__(self, layers, num_groups=32):
         super().__init__(layers, norm_layer=lambda x: nn.GroupNorm(num_groups, x))
 
-    def init_backbone(self, path, map_location=None):
+    def init_backbone(self, path):
         """ The path here comes from detectron. So we load it differently. """
         with open(path, 'rb') as f:
             state_dict = pickle.load(f, encoding='latin1') # From the detectron source
@@ -301,10 +301,10 @@ class DarkNetBackbone(nn.Module):
         """ Add a downsample layer to the backbone as per what SSD does. """
         self._make_layer(block, conv_channels // block.expansion, num_blocks=depth, stride=stride)
     
-    def init_backbone(self, path, map_location=None):
+    def init_backbone(self, path):
         """ Initializes the backbone weights for training. """
         # Note: Using strict=False is berry scary. Triple check this.
-        self.load_state_dict(torch.load(path), map_location, strict=False)
+        self.load_state_dict(torch.load(path, map_location='cpu'), strict=False)
 
 
 
@@ -407,9 +407,9 @@ class VGGBackbone(nn.Module):
         layerIdx = self.state_dict_lookup[int(vals[0])]
         return 'layers.%s.%s' % (layerIdx, vals[1])
 
-    def init_backbone(self, path, map_location=None):
+    def init_backbone(self, path):
         """ Initializes the backbone weights for training. """
-        state_dict = torch.load(path, map_location)
+        state_dict = torch.load(path, map_location='cpu')
         state_dict = OrderedDict([(self.transform_key(k), v) for k,v in state_dict.items()])
 
         self.load_state_dict(state_dict, strict=False)
