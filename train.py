@@ -87,6 +87,8 @@ parser.add_argument('--drop_weights', default=None, type=str,
                     help='Drop specified weights (split by comma) from existing model.')
 parser.add_argument('--interrupt_no_save', dest='interrupt_no_save', action='store_true',
                     help='Just exit when keyboard interrupt occurs for testing.')
+parser.add_argument('--no_warmup_rescale', dest='warmup_rescale', action='store_false',
+                    help='Do not rescale warmup coefficients on multiple GPU training.')
 
 parser.set_defaults(keep_latest=False)
 args = parser.parse_args()
@@ -129,6 +131,11 @@ def multi_gpu_rescale(args):
     args.lr *= scale_factor
     global lr
     lr = args.lr
+
+    if args.warmup_rescale:
+        cfg.lr_warmup_init = 0
+        cfg.lr_warmup_until = 1000
+
     args.save_interval = args.save_interval // scale_factor
     # cfg.lr_warmup_init *= scale_factor
     cfg.max_iter = cfg.max_iter // scale_factor
