@@ -130,7 +130,7 @@ def multi_gpu_rescale(args):
     global lr
     lr = args.lr
     args.save_interval = args.save_interval // scale_factor
-    cfg.lr_warmup_init *= scale_factor
+    # cfg.lr_warmup_init *= scale_factor
     cfg.max_iter = cfg.max_iter // scale_factor
     cfg.lr_steps = tuple([lr_step // scale_factor for lr_step in cfg.lr_steps])
 
