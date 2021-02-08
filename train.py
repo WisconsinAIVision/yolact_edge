@@ -20,6 +20,7 @@ import numpy as np
 import argparse
 import datetime
 from utils.tensorboard_helper import SummaryHelper
+import utils.misc as misc
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from utils.logging_helper import setup_logger
@@ -167,19 +168,20 @@ def train(rank, args):
         w.add_text("git_hash", repo.head.object.hexsha)
         logger.info("git hash: {}".format(repo.head.object.hexsha))
 
-    try:
-        logger.info("Initializing torch.distributed backend...")
-        dist.init_process_group(
-            backend='nccl',
-            init_method=args.dist_url,
-            world_size=args.num_gpus,
-            rank=rank
-        )
-    except Exception as e:
-        logger.error("Process group URL: {}".format(args.dist_url))
-        raise e
+    if args.num_gpus > 1:
+        try:
+            logger.info("Initializing torch.distributed backend...")
+            dist.init_process_group(
+                backend='nccl',
+                init_method=args.dist_url,
+                world_size=args.num_gpus,
+                rank=rank
+            )
+        except Exception as e:
+            logger.error("Process group URL: {}".format(args.dist_url))
+            raise e
 
-    dist.barrier()
+    misc.barrier()
 
     if torch.cuda.device_count() > 1:
         logger.info('Multiple GPUs detected! Turning off JIT.')
@@ -265,8 +267,10 @@ def train(rank, args):
 
     if args.cuda:
         net.cuda(rank)
-        net = nn.parallel.DistributedDataParallel(net, device_ids=[rank], output_device=rank, broadcast_buffers=False,
-                                                  find_unused_parameters=True)
+
+        if misc.is_distributed_initialized():
+            net = nn.parallel.DistributedDataParallel(net, device_ids=[rank], output_device=rank, broadcast_buffers=False,
+                                                      find_unused_parameters=True)
 
     optimizer = optim.SGD(filter(lambda x: x.requires_grad, net.parameters()),
                           lr=args.lr, momentum=args.momentum,
@@ -590,17 +594,17 @@ time: {time}  data_time: {data_time}  lr: {lr}  {memory}\
                             logger.info('Deleting old save...')
                             os.remove(latest)
 
-            dist.barrier()
+            misc.barrier()
 
             # This is done per epoch
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
                     if rank == 0:
                         compute_validation_map(yolact_net, val_dataset)
-                    dist.barrier()
+                    misc.barrier()
 
     except KeyboardInterrupt:
-        dist.barrier()
+        misc.barrier()
         if args.interrupt_no_save:
             logger.info('No save on interrupt, just exiting...')
         elif rank == 0:
