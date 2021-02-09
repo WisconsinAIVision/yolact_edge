@@ -162,6 +162,20 @@ class Detect(object):
         classes = torch.arange(num_classes, device=boxes.device)[:, None].expand_as(keep)
 
         # This try-except block aims to fix the IndexError that we might encounter when we train on custom datasets and evaluate with TensorRT enabled. See https://github.com/haotian-liu/yolact_edge/issues/27.
+        def fix_shape(classes, boxes, masks, scores):
+            num_dets = torch.numel(classes)
+
+            classes = classes.view(num_dets)
+            boxes = boxes.view(num_dets, 4)
+            masks = masks.view(num_dets, -1)
+            scores = scores.view(num_dets)
+
+            return classes, boxes, masks, scores
+
+        def flatten_index_select(x, idx, end_dim=None):
+            x = torch.flatten(x, end_dim=end_dim)
+            return torch.index_select(x, 0, idx)
+
         try:
             classes = classes[keep]
             boxes = boxes[keep]
@@ -171,19 +185,14 @@ class Detect(object):
             from utils.logging_helper import log_once
             log_once(self, "issue_27_flatten", name="yolact.layers.detect", message="Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
 
-            classes = torch.flatten(classes, end_dim=1)
-            boxes = torch.flatten(boxes, end_dim=1)
-            masks = torch.flatten(masks, end_dim=1)
-            scores = torch.flatten(scores, end_dim=1)
             keep = torch.flatten(keep, end_dim=1)
-
             idx = torch.nonzero(keep, as_tuple=True)[0]
 
-            classes = torch.index_select(classes, 0, idx)
-            boxes = torch.index_select(boxes, 0, idx)
-            masks = torch.index_select(masks, 0, idx)
-            scores = torch.index_select(scores, 0, idx)
-        
+            classes, boxes, masks, scores = [flatten_index_select(x, idx, end_dim=1)
+                                             for x in (classes, boxes, masks, scores)]
+
+        classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
+
         # Only keep the top cfg.max_num_detections highest scores across all classes
         scores, idx = scores.sort(0, descending=True)
         idx = idx[:cfg.max_num_detections]
@@ -200,6 +209,8 @@ class Detect(object):
             classes = torch.index_select(classes, 0, idx)
             boxes = torch.index_select(boxes, 0, idx)
             masks = torch.index_select(masks, 0, idx)
+
+        classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
 
         return boxes, masks, classes, scores
 
