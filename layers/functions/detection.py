@@ -30,7 +30,7 @@ class Detect(object):
             raise ValueError('nms_threshold must be non negative.')
         self.conf_thresh = conf_thresh
         
-        self.cross_class_nms = False
+        self.use_cross_class_nms = False
         self.use_fast_nms = False
 
     def __call__(self, predictions):
@@ -99,7 +99,10 @@ class Detect(object):
             return None
         
         if self.use_fast_nms:
-            boxes, masks, classes, scores = self.fast_nms(boxes, masks, scores, self.nms_thresh, self.top_k)
+            if self.use_cross_class_nms:
+                boxes, masks, classes, scores = self.cc_fast_nms(boxes, masks, scores, self.nms_thresh, self.top_k)
+            else:
+                boxes, masks, classes, scores = self.fast_nms(boxes, masks, scores, self.nms_thresh, self.top_k)
         else:
             boxes, masks, classes, scores = self.traditional_nms(boxes, masks, scores, self.nms_thresh, self.conf_thresh)
 
@@ -131,6 +134,34 @@ class Detect(object):
         # print(new_mask_norm[:5] @ new_mask_norm[:5].t())
         
         return idx_out, idx_out.size(0)
+
+    def cc_fast_nms(self, boxes, masks, scores, iou_threshold:float=0.5, top_k:int=200):
+        # Collapse all the classes into 1
+        scores, classes = scores.max(dim=0)
+
+        _, idx = scores.sort(0, descending=True)
+        idx = idx[:top_k]
+
+        boxes_idx = torch.index_select(boxes, 0, idx)
+
+        # Compute the pairwise IoU between the boxes
+        iou = jaccard(boxes_idx, boxes_idx)
+
+        # Zero out the lower triangle of the cosine similarity matrix and diagonal
+        iou.triu_(diagonal=1)
+
+        # Now that everything in the diagonal and below is zeroed out, if we take the max
+        # of the IoU matrix along the columns, each column will represent the maximum IoU
+        # between this element and every element with a higher score than this element.
+        iou_max, _ = torch.max(iou, dim=0)
+
+        # Now just filter out the ones greater than the threshold, i.e., only keep boxes that
+        # don't have a higher scoring box that would supress it in normal NMS.
+
+        idx_keep = torch.nonzero(iou_max <= iou_threshold, as_tuple=True)[0]
+        idx_out = torch.index_select(idx, 0, idx_keep)
+
+        return tuple([torch.index_select(x, 0, idx_out) for x in (boxes, masks, classes, scores)])
 
     def fast_nms(self, boxes, masks, scores, iou_threshold:float=0.5, top_k:int=200, second_threshold:bool=False):
         scores, idx = scores.sort(1, descending=True)
