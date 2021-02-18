@@ -208,7 +208,7 @@ class COCODetection(data.Dataset):
                 masks = None
                 target = None
 
-        if target.shape[0] == 0:
+        if target is not None and target.shape[0] == 0:
             print('Warning: Augmentation output an example with no ground truth. Resampling...')
             return self.pull_item(random.randint(0, len(self.ids)-1))
 
