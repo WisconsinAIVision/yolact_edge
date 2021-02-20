@@ -1412,57 +1412,6 @@ class Yolact(nn.Module):
             losses['W'] = loss_W * cfg.flow.fm_loss_alpha
         return losses
 
-    @staticmethod
-    def visualize_nonlocal(net_outs, prev_images, cur_images):
-        from random import random
-        import cv2
-        from layers.output_utils import undo_image_transformation
-        import itertools
-
-        target_size = (64, 64)
-        prev_image = F.interpolate(prev_images, target_size, mode='area')[0]
-        cur_image = F.interpolate(cur_images, target_size, mode='area')[0]
-
-        prev_image = undo_image_transformation(prev_image, target_size[0], target_size[1]).astype('float32')
-        cur_image_ = undo_image_transformation(cur_image, target_size[0], target_size[1]).astype('float32')
-
-        images_stack = []
-        image_hw = target_size[0]
-
-        num_grids = 5
-        for hh, ww in itertools.product(range(num_grids), range(num_grids)):
-            ratio_hh = hh / num_grids
-            ratio_ww = ww / num_grids
-            rand_hh, rand_ww = int(ratio_hh * image_hw), int(ratio_ww * image_hw)
-
-            cur_image = cur_image_.copy()
-            cur_image[rand_hh, rand_ww, :] = (1, 0, 0)
-            images_stack.append(prev_image.transpose(2, 0, 1))
-            images_stack.append(cur_image.transpose(2, 0, 1))
-
-            for nl_cache in net_outs["nl_caches"]:
-                feat_hw = int(nl_cache.size(1) ** 0.5)
-                inter_hw = int(nl_cache.size(2) ** 0.5)
-                nl_cache = nl_cache.view(-1, feat_hw, feat_hw, inter_hw, inter_hw)
-
-                rand_h = int(feat_hw / image_hw * rand_hh)
-                rand_w = int(feat_hw / image_hw * rand_ww)
-
-                heat_map = nl_cache[0, rand_h, rand_w].data.cpu().numpy()
-
-                heat_map_min, heat_map_max = heat_map.min(), heat_map.max()
-                heat_map = (heat_map - heat_map_min) / (heat_map_max - heat_map_min)
-                heat_map_u8 = (heat_map * 255).astype('uint8')
-                heat_map_image = cv2.applyColorMap(heat_map_u8, cv2.COLORMAP_JET)
-                heat_map_image = cv2.resize(heat_map_image, target_size)
-                heat_map_image = (heat_map_image / 255.0).astype('float32')
-
-                blend_ratio = 0.6
-                heatmap = cv2.addWeighted(heat_map_image, blend_ratio, prev_image, 1.0 - blend_ratio, 0)
-                heatmap = heatmap.transpose(2, 0, 1)
-                images_stack.append(heatmap)
-        return images_stack
-
     def forward_flow(self, extras):
         imgs_1, imgs_2 = extras
 
