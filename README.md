@@ -92,6 +92,10 @@ python eval.py --trained_model=weights/yolact_edge_54_800000.pth --benchmark --m
 
 ### Notes
 
+#### Handling inference error when using TensorRT
+If you are using TensorRT conversion of YolactEdge and encountered issue in PostProcessing or NMS stage, this might be related to TensorRT engine issues. We implemented a experimental safe mode that will handle these cases carefully. Try this out with `--use_tensorrt_safe_mode` option in your command.
+
+
 #### Inference using models trained with YOLACT
 If you have a pre-trained model with [YOLACT](https://github.com/dbolya/yolact), and you want to take advantage of either TensorRT feature of YolactEdge, simply specify the `--config=yolact_edge_config` in command line options, and the code will automatically detect and convert the model weights to be compatible.
 
