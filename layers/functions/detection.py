@@ -192,7 +192,6 @@ class Detect(object):
         # Assign each kept detection to its corresponding class
         classes = torch.arange(num_classes, device=boxes.device)[:, None].expand_as(keep)
 
-        # This try-except block aims to fix the IndexError that we might encounter when we train on custom datasets and evaluate with TensorRT enabled. See https://github.com/haotian-liu/yolact_edge/issues/27.
         def fix_shape(classes, boxes, masks, scores):
             num_dets = torch.numel(classes)
 
@@ -207,41 +206,33 @@ class Detect(object):
             x = torch.flatten(x, end_dim=end_dim)
             return torch.index_select(x, 0, idx)
 
-        try:
+        if not cfg.use_tensorrt_safe_mode:
             classes = classes[keep]
             boxes = boxes[keep]
             masks = masks[keep]
             scores = scores[keep]
-        except IndexError:
-            from utils.logging_helper import log_once
-            log_once(self, "issue_27_flatten", name="yolact.layers.detect", message="Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Flattening predictions to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
-
+        else:
             keep = torch.flatten(keep, end_dim=1)
             idx = torch.nonzero(keep, as_tuple=True)[0]
 
             classes, boxes, masks, scores = [flatten_index_select(x, idx, end_dim=1)
                                              for x in (classes, boxes, masks, scores)]
-
-        classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
+            classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
 
         # Only keep the top cfg.max_num_detections highest scores across all classes
         scores, idx = scores.sort(0, descending=True)
         idx = idx[:cfg.max_num_detections]
         scores = scores[:cfg.max_num_detections]
 
-        try:
+        if not cfg.use_tensorrt_safe_mode:
             classes = classes[idx]
             boxes = boxes[idx]
             masks = masks[idx]
-        except IndexError:
-            from utils.logging_helper import log_once
-            log_once(self, "issue_27_index_select", name="yolact.layers.detect", message="Encountered IndexError as mentioned in https://github.com/haotian-liu/yolact_edge/issues/27. Using `torch.index_select` to avoid error, please verify the outputs. If there are any problems you met related to this, please report an issue.")
-
+        else:
             classes = torch.index_select(classes, 0, idx)
             boxes = torch.index_select(boxes, 0, idx)
             masks = torch.index_select(masks, 0, idx)
-
-        classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
+            classes, boxes, masks, scores = fix_shape(classes, boxes, masks, scores)
 
         return boxes, masks, classes, scores
 

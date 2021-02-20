@@ -785,6 +785,8 @@ yolact_base_config = coco_base_config.copy({
     'torch2trt_spa_int8': False,
     'torch2trt_flow_net': False,
     'torch2trt_flow_net_int8': False,
+
+    'use_tensorrt_safe_mode': False,
 })
 
 yolact_edge_config = yolact_base_config.copy({

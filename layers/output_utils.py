@@ -42,7 +42,10 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
 
         for k in dets:
             if k != 'proto':
-                dets[k] = dets[k][keep]
+                if cfg.use_tensorrt_safe_mode:
+                    dets[k] = torch.index_select(dets[k], 0, torch.nonzero(keep, as_tuple=True)[0])
+                else:
+                    dets[k] = dets[k][keep]
         
         if dets['score'].size(0) == 0:
             return [torch.Tensor()] * 4

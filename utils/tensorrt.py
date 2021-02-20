@@ -29,6 +29,10 @@ def convert_to_tensorrt(net, cfg, args, transform):
 
     net.model_path = args.trained_model
 
+    if args.use_tensorrt_safe_mode:
+        cfg.use_tensorrt_safe_mode = True
+        logger.warning("Running TensorRT in safe mode. This is an attempt to solve various TensorRT engine errors.")
+
     calibration_dataset = None
     calibration_protonet_dataset = None
     calibration_ph_dataset = None
