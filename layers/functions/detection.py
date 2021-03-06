@@ -1,15 +1,15 @@
 import torch
 import torch.nn.functional as F
 from ..box_utils import decode, jaccard, index2d
-from utils import timer
+from ...utils import timer
 
-from data import cfg, mask_type
+from ...data import cfg, mask_type
 
 import numpy as np
 
 import pyximport
 pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
-from utils.cython_nms import nms as cnms
+from ...utils.cython_nms import nms as cnms
 
 
 class Detect(object):
@@ -20,7 +20,7 @@ class Detect(object):
     """
     # TODO: Refactor this whole class away. It needs to go.
 
-    def __init__(self, num_classes, bkg_label, top_k, conf_thresh, nms_thresh):
+    def __init__(self, num_classes, bkg_label, top_k, conf_thresh, nms_thresh, use_fast_nms=False):
         self.num_classes = num_classes
         self.background_label = bkg_label
         self.top_k = top_k
@@ -31,7 +31,7 @@ class Detect(object):
         self.conf_thresh = conf_thresh
         
         self.use_cross_class_nms = False
-        self.use_fast_nms = False
+        self.use_fast_nms = use_fast_nms
 
     def __call__(self, predictions):
         """

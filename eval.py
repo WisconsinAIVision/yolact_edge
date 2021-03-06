@@ -1,14 +1,14 @@
-from data import COCODetection, YoutubeVIS, get_label_map, MEANS, COLORS
-from yolact import Yolact
-from utils.augmentations import BaseTransform, BaseTransformVideo, FastBaseTransform, Resize
-from utils.functions import MovingAverage, ProgressBar
-from layers.box_utils import jaccard, center_size
-from utils import timer
-from utils.functions import SavePath
-from layers.output_utils import postprocess, undo_image_transformation
+from .data import COCODetection, YoutubeVIS, get_label_map, MEANS, COLORS
+from .yolact import Yolact
+from .utils.augmentations import BaseTransform, BaseTransformVideo, FastBaseTransform, Resize
+from .utils.functions import MovingAverage, ProgressBar
+from .layers.box_utils import jaccard, center_size
+from .utils import timer
+from .utils.functions import SavePath
+from .layers.output_utils import postprocess, undo_image_transformation
 import pycocotools
 
-from data import cfg, set_cfg, set_dataset
+from .data import cfg, set_cfg, set_dataset
 
 import numpy as np
 import torch
@@ -32,7 +32,7 @@ import logging
 
 import math
 
-from utils.tensorrt import convert_to_tensorrt
+from .utils.tensorrt import convert_to_tensorrt
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -146,6 +146,8 @@ def parse_args(argv=None):
     
     if args.seed is not None:
         random.seed(args.seed)
+    
+    return args
 
 iou_thresholds = [x / 100 for x in range(50, 100, 5)]
 coco_cats = {} # Call prep_coco_cats to fill this
@@ -1194,7 +1196,7 @@ if __name__ == '__main__':
     if args.dataset is not None:
         set_dataset(args.dataset)
 
-    from utils.logging_helper import setup_logger
+    from .utils.logging_helper import setup_logger
     setup_logger(logging_level=logging.INFO)
     logger = logging.getLogger("yolact.eval")
 
