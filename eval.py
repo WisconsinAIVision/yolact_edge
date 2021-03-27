@@ -307,7 +307,7 @@ class Detections:
             'score': float(score)
         })
 
-    def add_mask(self, image_id:int, category_id:int, segmentation:np.ndarray, score:float):
+    def add_mask(self, image_id:int, category_id:int, segmentation:np.ndarray, score:float, skip_category=True):
         """ The segmentation should be the full mask, the size of the image and with size [h, w]. """
         rle = pycocotools.mask.encode(np.asfortranarray(segmentation.astype(np.uint8)))
         rle['counts'] = rle['counts'].decode('ascii') # json.dump doesn't like bytes strings
@@ -318,7 +318,7 @@ class Detections:
             'segmentation': rle,
             'score': float(score)
         })
-    
+
     def dump(self):
         dump_arguments = [
             (self.bbox_data, args.bbox_det_file),
@@ -584,7 +584,7 @@ def badhash(x):
     x =  ((x >> 16) ^ x) & 0xFFFFFFFF
     return x
 
-def evalimage(net:Yolact, path:str, save_path:str=None):
+def evalimage(net:Yolact, path:str, save_path:str=None, detections:Detections=None, image_id=None):
     frame = torch.from_numpy(cv2.imread(path)).cuda().float()
     batch = FastBaseTransform()(frame.unsqueeze(0))
 
@@ -593,9 +593,25 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
 
     extras = {"backbone": "full", "interrupt": False, "keep_statistics": False, "moving_statistics": None}
 
+
     preds = net(batch, extras=extras)["pred_outs"]
 
     img_numpy = prep_display(preds, frame, None, None, undo_transform=False)
+
+    if args.output_coco_json:
+        with timer.env('Postprocess'):
+            _, _, h, w = batch.size()
+            classes, scores, boxes, masks = \
+                postprocess(preds, w, h, crop_masks=args.crop, score_threshold=args.score_threshold)
+
+        with timer.env('JSON Output'):
+            boxes = boxes.cpu().numpy()
+            masks = masks.view(-1, h, w).cpu().numpy()
+            for i in range(masks.shape[0]):
+                # Make sure that the bounding box actually makes sense and a mask was produced
+                if (boxes[i, 3] - boxes[i, 1]) * (boxes[i, 2] - boxes[i, 0]) > 0:
+                    detections.add_bbox(image_id, classes[i], boxes[i,:],   scores[i])
+                    detections.add_mask(image_id, classes[i], masks[i,:,:], scores[i])
     
     if save_path is None:
         img_numpy = img_numpy[:, :, (2, 1, 0)]
@@ -607,19 +623,20 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     else:
         cv2.imwrite(save_path, img_numpy)
 
-def evalimages(net:Yolact, input_folder:str, output_folder:str):
+def evalimages(net:Yolact, input_folder:str, output_folder:str, detections:Detections=None):
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
 
     print()
-    for p in Path(input_folder).glob('*'): 
+    for i, p in enumerate(Path(input_folder).glob('*')):
         path = str(p)
         name = os.path.basename(path)
         name = '.'.join(name.split('.')[:-1]) + '.png'
         out_path = os.path.join(output_folder, name)
 
-        evalimage(net, path, out_path)
+        evalimage(net, path, out_path, detections=detections, image_id=str(i))
         print(path + ' -> ' + out_path)
+
     print('Done.')
 
 from multiprocessing.pool import ThreadPool
@@ -877,16 +894,29 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
     net.detect.use_fast_nms = args.fast_nms
     cfg.mask_proto_debug = args.mask_proto_debug
 
+    if args.output_coco_json and (args.image or  args.images):
+        detections = Detections()
+        prep_coco_cats()
+
     if args.image is not None:
         if ':' in args.image:
             inp, out = args.image.split(':')
-            evalimage(net, inp, out)
+            evalimage(net, inp, out, detections=detections, image_id="0")
         else:
-            evalimage(net, args.image)
+            evalimage(net, args.image, detections=detections, image_id="0")
+
+        if args.output_coco_json:
+            detections.dump()
+
         return
+
     elif args.images is not None:
         inp, out = args.images.split(':')
-        evalimages(net, inp, out)
+        evalimages(net, inp, out, detections=detections)
+
+        if args.output_coco_json:
+            detections.dump()
+            
         return
     elif args.video is not None:
         if ':' in args.video:
@@ -895,6 +925,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
         else:
             evalvideo(net, args.video)
         return
+
 
     frame_times = MovingAverage(max_window_size=100000)
     dataset_size = len(dataset) if args.max_images < 0 else min(args.max_images, len(dataset))
