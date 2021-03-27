@@ -307,7 +307,7 @@ class Detections:
             'score': float(score)
         })
 
-    def add_mask(self, image_id:int, category_id:int, segmentation:np.ndarray, score:float, skip_category=True):
+    def add_mask(self, image_id:int, category_id:int, segmentation:np.ndarray, score:float):
         """ The segmentation should be the full mask, the size of the image and with size [h, w]. """
         rle = pycocotools.mask.encode(np.asfortranarray(segmentation.astype(np.uint8)))
         rle['counts'] = rle['counts'].decode('ascii') # json.dump doesn't like bytes strings
