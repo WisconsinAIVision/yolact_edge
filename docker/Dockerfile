@@ -30,7 +30,10 @@ RUN apt-get update && $APT_INSTALL \
     python3-pip && \
     pip3 install --upgrade pip \
     python3-dev \
-    build-essential
+    build-essential \
+    ffmpeg \
+    libsm6 \
+    libxext6
     
 
 RUN $PIP_INSTALL \
