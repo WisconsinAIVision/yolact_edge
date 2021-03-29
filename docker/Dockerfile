@@ -48,10 +48,6 @@ RUN $PIP_INSTALL git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools
 RUN $PIP_INSTALL torch==1.6.0 \
                    torchvision==0.7.0
 
-COPY ../. /home/{$USER}/yolact_edge/
-
-WORKDIR yolact_edge
-
 #cleaning
 RUN apt-get clean && \
     apt-get autoremove && \
