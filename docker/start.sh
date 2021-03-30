@@ -1,12 +1,13 @@
 #!/bin/bash
 
-DATASETS=$1
+SOURCE=$1
+DATASETS=$2
 
 docker run --rm \
 	   -ti \
            --name yolact_edge \
            --gpus all \
-           -v ..:/home/yolact_edge/yolact_edge/:rw \
+           -v $SOURCE:/home/yolact_edge/yolact_edge/:rw \
            -v $DATASETS:/datasets/:ro \
            yolact_edge
 
