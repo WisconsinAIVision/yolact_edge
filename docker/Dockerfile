@@ -18,9 +18,6 @@ RUN useradd -m ${USER} --uid=${UID} \
 
 WORKDIR /home/${USER}
 
-#tensorrt
-#torch2trt
-
 #tools
 RUN apt-get update && $APT_INSTALL \
     nano \
@@ -51,7 +48,48 @@ RUN $PIP_INSTALL torch==1.7.1+cu110 \
                  torchvision==0.8.2+cu110 \
                  -f https://download.pytorch.org/whl/torch_stable.html
 
+#install TensorRT packages
+ENV version="8.0.5.39-1+cuda11.0"
+RUN apt-get update && $APT_INSTALL \
+                    libcudnn8=${version} \
+                    libcudnn8-dev=${version} && \
+                    apt-mark hold libcudnn8 libcudnn8-dev
+
+ENV version="7.2.3-1+cuda11.0"
+RUN apt-get update && $APT_INSTALL \
+                libnvinfer7=${version} \ 
+                libnvonnxparsers7=${version} \
+                libnvparsers7=${version} \
+                libnvinfer-plugin7=${version} \
+                libnvinfer-dev=${version} \
+                libnvonnxparsers-dev=${version} \
+                libnvparsers-dev=${version} \
+                libnvinfer-plugin-dev=${version} \
+                python-libnvinfer=${version} \
+                python3-libnvinfer=${version} && \
+                apt-mark hold libnvinfer7 \
+                libnvonnxparsers7 \
+                libnvparsers7 \
+                libnvinfer-plugin7 \
+                libnvinfer-dev \ 
+                libnvonnxparsers-dev \
+                libnvparsers-dev \
+                libnvinfer-plugin-dev \
+                python-libnvinfer \
+                python3-libnvinfer
+
+#clone and compile torch2trt
+RUN $GIT_CLONE https://github.com/haotian-liu/torch2trt.git
+
+WORKDIR /home/${USER}/torch2trt
+
+RUN git checkout x86 && \
+    python3 setup.py install --plugins
+
 #cleaning
 RUN apt-get clean && \
     apt-get autoremove && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /var/lib/apt/lists/* /tmp/* build
+
+#start path
+WORKDIR /home/${USER}/yolact_edge
