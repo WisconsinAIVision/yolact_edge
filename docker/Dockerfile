@@ -27,15 +27,14 @@ RUN apt-get update && $APT_INSTALL \
     git \
     python3 \
     python3-setuptools \
-    python3-pip && \
-    pip3 install --upgrade pip \
+    python3-pip \
     python3-dev \
     build-essential \
     ffmpeg \
     libsm6 \
-    libxext6
+    libxext6 && \
+    pip3 install --upgrade pip 
     
-
 RUN $PIP_INSTALL \
     cython \
     opencv-python \
@@ -49,7 +48,7 @@ RUN $PIP_INSTALL git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools
 
 #pytorch  
 RUN $PIP_INSTALL torch==1.6.0 \
-                   torchvision==0.7.0
+                 torchvision==0.7.0
 
 #cleaning
 RUN apt-get clean && \
