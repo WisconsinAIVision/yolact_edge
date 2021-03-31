@@ -2,9 +2,10 @@
 
 SOURCE=$1
 DATASETS=$2
+#for example from yolact_edge folder ./start.sh `pwd` <path_to_datasets>
 
 docker run --rm \
-	       -ti \
+	   -ti \
            --name yolact_edge \
            --gpus all \
            -v $SOURCE:/home/docker/yolact_edge/:rw \
