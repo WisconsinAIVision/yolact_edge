@@ -2,7 +2,7 @@
 
 SOURCE=$1
 DATASETS=$2
-#for example from yolact_edge folder ./start.sh `pwd` <path_to_datasets>
+#for example from yolact_edge folder ./docker/start.sh `pwd` <path_to_datasets>
 
 docker run --rm \
 	   -ti \

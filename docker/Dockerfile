@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/cuda:10.2-cudnn8-runtime-ubuntu18.04
+FROM nvcr.io/nvidia/cuda:11.0.3-cudnn8-runtime-ubuntu18.04
 
 #installation settings
 ARG APT_INSTALL="apt-get install -y --no-install-recommends"
@@ -47,8 +47,9 @@ RUN $PIP_INSTALL \
 RUN $PIP_INSTALL git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools&subdirectory=PythonAPI"
 
 #pytorch  
-RUN $PIP_INSTALL torch==1.6.0 \
-                 torchvision==0.7.0
+RUN $PIP_INSTALL torch==1.7.1+cu110 \
+                 torchvision==0.8.2+cu110 \
+                 -f https://download.pytorch.org/whl/torch_stable.html
 
 #cleaning
 RUN apt-get clean && \
