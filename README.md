@@ -18,10 +18,6 @@
 
 [![example-gif-3](data/yolact_edge_example_3.gif)](https://www.youtube.com/watch?v=GBCK9SrcCLM)
 
-## Installation
-
-See [INSTALL.md](INSTALL.md).
-
 ## Model Zoo
 
 We provide baseline YOLACT and YolactEdge models trained on COCO and YouTube VIS (our sub-training split, with COCO joint training).
@@ -49,6 +45,10 @@ COCO models:
 | YolactEdge | R-50-FPN | 27.0| - | 30.7 | 140.3 | [download](https://drive.google.com/file/d/15TRS8MNNe3pmjilonRy9OSdJdCPl5DhN/view?usp=sharing) \| [mirror](https://1drv.ms/u/s!AkSxI62eEcpbiG5ZnhPTSkqBCURo?e=lNOaXr) |
 | YOLACT | R-101-FPN | 29.8 | 33.5 | 6.6 | 36.5 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) \| [mirror](https://1drv.ms/u/s!AkSxI62eEcpbiG8nFXtvgAkI-c1H?e=HyfH8Z) |
 | YolactEdge | R-101-FPN | 29.5 | - | 27.3 | 124.8 | [download](https://drive.google.com/file/d/1EAzO-vRDZ2hupUJ4JFSUi40lAZ5Jo-Bp/view?usp=sharing) \| [mirror](https://1drv.ms/u/s!AkSxI62eEcpbiG8nFXtvgAkI-c1H?e=HyfH8Z) |
+
+## Installation
+
+See [INSTALL.md](INSTALL.md).
 
 ## Getting Started
 
@@ -225,11 +225,11 @@ my_custom_dataset = dataset_base.copy({
 If you use this code base in your work, please consider citing:
 
 ```
-@article{yolactedge,
+@inproceedings{yolactedge-icra2021,
   author    = {Haotian Liu and Rafael A. Rivera Soto and Fanyi Xiao and Yong Jae Lee},
-  title     = {YolactEdge: Real-time Instance Segmentation on the Edge (Jetson AGX Xavier: 30 FPS, RTX 2080 Ti: 170 FPS)},
-  journal   = {arXiv preprint arXiv:2012.12259},
-  year      = {2020},
+  title     = {YolactEdge: Real-time Instance Segmentation on the Edge},
+  booktitle = {ICRA},
+  year      = {2021},
 }
 ```
 ```
