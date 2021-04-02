@@ -79,17 +79,15 @@ RUN apt-get update && $APT_INSTALL \
                 python3-libnvinfer
 
 #clone and compile torch2trt
-RUN $GIT_CLONE https://github.com/haotian-liu/torch2trt.git
+RUN $GIT_CLONE https://github.com/NVIDIA-AI-IOT/torch2trt
 
 WORKDIR /home/${USER}/torch2trt
-
-RUN git checkout x86 && \
-    python3 setup.py install --plugins
+RUN python3 setup.py install
 
 #cleaning
 RUN apt-get clean && \
     apt-get autoremove && \
-    rm -rf /var/lib/apt/lists/* /tmp/* build
+    rm -rf /var/lib/apt/lists/* /tmp/* torch2trt/build
 
 #start path
 WORKDIR /home/${USER}/yolact_edge
