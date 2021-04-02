@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/cuda:11.0.3-cudnn8-runtime-ubuntu18.04
+FROM nvcr.io/nvidia/cuda:11.0.3-cudnn8-devel-ubuntu18.04
 
 #installation settings
 ARG APT_INSTALL="apt-get install -y --no-install-recommends"
@@ -82,12 +82,12 @@ RUN apt-get update && $APT_INSTALL \
 RUN $GIT_CLONE https://github.com/NVIDIA-AI-IOT/torch2trt
 
 WORKDIR /home/${USER}/torch2trt
-RUN python3 setup.py install
+RUN python3 setup.py install --plugins
 
 #cleaning
 RUN apt-get clean && \
     apt-get autoremove && \
-    rm -rf /var/lib/apt/lists/* /tmp/* torch2trt/build
+    rm -rf /var/lib/apt/lists/* /tmp/*
 
 #start path
 WORKDIR /home/${USER}/yolact_edge
