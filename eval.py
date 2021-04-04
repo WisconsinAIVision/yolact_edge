@@ -894,7 +894,8 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
     net.detect.use_fast_nms = args.fast_nms
     cfg.mask_proto_debug = args.mask_proto_debug
 
-    if args.output_coco_json and (args.image or  args.images):
+    detections = None
+    if args.output_coco_json and (args.image or args.images):
         detections = Detections()
         prep_coco_cats()
 
