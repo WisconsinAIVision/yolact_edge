@@ -218,7 +218,8 @@ my_custom_dataset = dataset_base.copy({
 })
 ```
  - Note that: class IDs in the annotation file should start at 1 and increase sequentially on the order of `class_names`. If this isn't the case for your annotation file (like in COCO), see the field `label_map` in `dataset_base`.
- - Finally, in `yolact_edge_config` in the same file, change the value for `'dataset'` to `'my_custom_dataset'` or whatever you named the config object above. Then you can use any of the training commands in the previous section.
+ - Finally, in `yolact_edge_config` in the same file, change the value for `'dataset'` to `'my_custom_dataset'` or whatever you named the config object above and `'num_classes'` to number of classes in your dataset+1. Then you can use any of the training commands in the previous section.
+ 
 
 ## Citation
 
