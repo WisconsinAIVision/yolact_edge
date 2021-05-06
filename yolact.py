@@ -9,15 +9,15 @@ from math import sqrt
 from typing import List, Tuple, Optional
 from torch import Tensor
 
-from data.config import cfg, mask_type
-from layers import Detect
-from layers.interpolate import InterpolateModule
-from layers.warp_utils import deform_op
-from backbone import construct_backbone
+from .data.config import cfg, mask_type
+from .layers import Detect
+from .layers.interpolate import InterpolateModule
+from .layers.warp_utils import deform_op
+from .backbone import construct_backbone
 
 import torch.backends.cudnn as cudnn
-from utils import timer
-from utils.functions import MovingAverage
+from .utils import timer
+from .utils.functions import MovingAverage
 
 import logging
 import os
@@ -1174,7 +1174,8 @@ class Yolact(nn.Module):
             self.semantic_seg_conv = nn.Conv2d(src_channels[0], cfg.num_classes-1, kernel_size=1)
 
         # For use in evaluation
-        self.detect = Detect(cfg.num_classes, bkg_label=0, top_k=200, conf_thresh=0.05, nms_thresh=0.5)
+        self.detect = Detect(cfg.num_classes, bkg_label=0, top_k=200, conf_thresh=0.05, nms_thresh=0.5,
+                             use_fast_nms=cfg.use_fast_nms)
 
     def save_weights(self, path):
         """ Saves the model's weights using compression because the file sizes were getting too big. """
