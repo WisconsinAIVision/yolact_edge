@@ -50,6 +50,8 @@ COCO models:
 
 See [INSTALL.md](INSTALL.md).
 
+Optionally, you can use the official [Dockerfile](docker) to set up full enivronment with one command.
+
 ## Getting Started
 
 Follow the [installation instructions](INSTALL.md) to set up required environment for running YolactEdge.
