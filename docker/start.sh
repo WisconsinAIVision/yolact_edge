@@ -1,13 +1,10 @@
 #!/bin/bash
 
-SOURCE=$1
+SOURCE_CODE=$1
 DATASETS=$2
-#for example from yolact_edge folder ./docker/start.sh `pwd` <path_to_datasets>
 
-docker run --rm \
-	   -ti \
-           --name yolact_edge \
-           --gpus all \
-           -v $SOURCE:/home/docker/yolact_edge/:rw \
-           -v $DATASETS:/datasets/:ro \
-           yolact_edge_image
+docker run --gpus all -it --name=yolact_edge \
+  --shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  -v $SOURCE_CODE:/yolact_edge/:rw \
+  -v $DATASETS:/datasets/:ro \
+  yolact_edge_image
