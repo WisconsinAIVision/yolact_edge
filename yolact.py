@@ -1255,7 +1255,7 @@ class Yolact(nn.Module):
             logger.warning("Some parameters in the checkpoint have a different shape in the current model, "
                            "and are initialized as they should be: {}".format(", ".join(keys_mismatch)))
 
-        if args.coco_transfer or args.yolact_transfer:
+        if args is not None and (args.coco_transfer or args.yolact_transfer):
             logger.warning("`--coco_transfer` or `--yolact_transfer` is no longer needed. The code will automatically detect and convert YOLACT-trained weights now.")
 
         self.load_state_dict(state_dict)
