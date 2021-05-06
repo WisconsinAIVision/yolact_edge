@@ -1202,31 +1202,29 @@ class Yolact(nn.Module):
                 if cfg.fpn is not None and int(key.split('.')[2]) >= cfg.fpn.num_downsample:
                     del state_dict[key]
 
-            if args is not None:
-                if args.drop_weights is not None:
-                    for drop_key in drop_weight_keys:
-                        if key.startswith(drop_key):
-                            del state_dict[key]
+            if args is not None and args.drop_weights is not None:
+                for drop_key in drop_weight_keys:
+                    if key.startswith(drop_key):
+                        del state_dict[key]
 
-                if key.startswith('fpn.lat_layers'):
-                    transfered_from_yolact = True
-                    state_dict[key.replace('fpn.', 'fpn_phase_1.')] = state_dict[key]
-                    del state_dict[key]
-                elif key.startswith('fpn.') and key in state_dict:
-                    transfered_from_yolact = True
-                    state_dict[key.replace('fpn.', 'fpn_phase_2.')] = state_dict[key]
-                    del state_dict[key]
+            if key.startswith('fpn.lat_layers'):
+                transfered_from_yolact = True
+                state_dict[key.replace('fpn.', 'fpn_phase_1.')] = state_dict[key]
+                del state_dict[key]
+            elif key.startswith('fpn.') and key in state_dict:
+                transfered_from_yolact = True
+                state_dict[key.replace('fpn.', 'fpn_phase_2.')] = state_dict[key]
+                del state_dict[key]
 
         keys_not_exist = []
         keys_not_used = []
         keys_mismatch = []
 
         for key in list(cur_state_dict.keys()):
-            if args is not None:
-                if args.drop_weights is not None:
-                    for drop_key in drop_weight_keys:
-                        if key.startswith(drop_key):
-                            state_dict[key] = cur_state_dict[key]
+            if args is not None and args.drop_weights is not None:
+                for drop_key in drop_weight_keys:
+                    if key.startswith(drop_key):
+                        state_dict[key] = cur_state_dict[key]
 
             # for compatibility with models without existing modules
             if key not in state_dict:
@@ -1255,7 +1253,7 @@ class Yolact(nn.Module):
             logger.warning("Some parameters in the checkpoint have a different shape in the current model, "
                            "and are initialized as they should be: {}".format(", ".join(keys_mismatch)))
 
-        if args.coco_transfer or args.yolact_transfer:
+        if args is not None and (args.coco_transfer or args.yolact_transfer):
             logger.warning("`--coco_transfer` or `--yolact_transfer` is no longer needed. The code will automatically detect and convert YOLACT-trained weights now.")
 
         self.load_state_dict(state_dict)
