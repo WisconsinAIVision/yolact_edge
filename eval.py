@@ -1,14 +1,15 @@
-from data import COCODetection, YoutubeVIS, get_label_map, MEANS, COLORS
-from yolact import Yolact
-from utils.augmentations import BaseTransform, BaseTransformVideo, FastBaseTransform, Resize
-from utils.functions import MovingAverage, ProgressBar
-from layers.box_utils import jaccard, center_size
-from utils import timer
-from utils.functions import SavePath
-from layers.output_utils import postprocess, undo_image_transformation
-import pycocotools
+from yolact_edge.data import COCODetection, YoutubeVIS, get_label_map, MEANS, COLORS
+from yolact_edge.data import cfg, set_cfg, set_dataset
+from yolact_edge.yolact import Yolact
+from yolact_edge.utils.augmentations import BaseTransform, BaseTransformVideo, FastBaseTransform, Resize
+from yolact_edge.utils.functions import MovingAverage, ProgressBar
+from yolact_edge.layers.box_utils import jaccard, center_size
+from yolact_edge.utils import timer
+from yolact_edge.utils.functions import SavePath
+from yolact_edge.layers.output_utils import postprocess, undo_image_transformation
+from yolact_edge.utils.tensorrt import convert_to_tensorrt
 
-from data import cfg, set_cfg, set_dataset
+import pycocotools
 
 import numpy as np
 import torch
@@ -32,7 +33,6 @@ import logging
 
 import math
 
-from utils.tensorrt import convert_to_tensorrt
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -1226,7 +1226,7 @@ if __name__ == '__main__':
     if args.dataset is not None:
         set_dataset(args.dataset)
 
-    from utils.logging_helper import setup_logger
+    from yolact_edge.utils.logging_helper import setup_logger
     setup_logger(logging_level=logging.INFO)
     logger = logging.getLogger("yolact.eval")
 

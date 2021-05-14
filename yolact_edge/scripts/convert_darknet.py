@@ -1,4 +1,4 @@
-from backbone import DarkNetBackbone
+from yolact_edge.backbone import DarkNetBackbone
 import h5py
 import torch
 

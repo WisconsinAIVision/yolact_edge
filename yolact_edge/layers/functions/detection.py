@@ -1,15 +1,15 @@
 import torch
 import torch.nn.functional as F
 from ..box_utils import decode, jaccard, index2d
-from utils import timer
+from yolact_edge.utils import timer
 
-from data import cfg, mask_type
+from yolact_edge.data import cfg, mask_type
 
 import numpy as np
 
 import pyximport
 pyximport.install(setup_args={"include_dirs":np.get_include()}, reload_support=True)
-from utils.cython_nms import nms as cnms
+from yolact_edge.utils.cython_nms import nms as cnms
 
 
 class Detect(object):
@@ -257,7 +257,7 @@ class Detect(object):
             if cls_scores.size(0) == 0:
                 continue
             
-            preds = torch.cat([boxes[conf_mask], cls_scores[:, None]], dim=1).cpu().numpy()
+            preds = torch.cat([boxes[conf_mask], cls_scores[:, None]], dim=1).detach().cpu().numpy()
             keep = cnms(preds, iou_threshold)
             keep = torch.Tensor(keep, device=boxes.device).long()
 

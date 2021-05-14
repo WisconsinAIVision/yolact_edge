@@ -5,7 +5,7 @@ import numpy as np
 import types
 from numpy import random
 
-from data import cfg, MEANS, STD
+from yolact_edge.data import cfg, MEANS, STD
 
 
 def intersect(box_a, box_b):
