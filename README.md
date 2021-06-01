@@ -145,63 +145,11 @@ Use the help option to see a description of all available command line arguments
 ```Shell
 python eval.py --help
 ```
-
 ### Programmatic inference
 
-There are two steps to make this work:
+You can use yolact_edge as a package in your own code. There are two steps to make this work:
  1) Install YOLACT edge as python package: ```pip install .```
- 2) Use it in your own script: 
-
-```Python
-# from yolact_edge.inference import YOLACTEdgeInference
-import time
-import cv2
-from yolact_edge.inference import YOLACTEdgeInference
-
-weights = "yolact_edge_resnet50_54_800000.pth"
-# All available model configs, depends on which weights
-# you use. More info could be found in data/config.py.
-model_configs = [
-    'yolact_edge_mobilenetv2_config',
-    'yolact_edge_vid_config',
-    'yolact_edge_vid_minimal_config',
-    'yolact_edge_vid_trainflow_config',
-    'yolact_edge_youtubevis_config',
-    'yolact_resnet50_config',
-    'yolact_resnet152_config',
-    'yolact_edge_resnet50_config',
-    'yolact_edge_vid_resnet50_config',
-    'yolact_edge_vid_trainflow_resnet50_config',
-    'yolact_edge_youtubevis_resnet50_config',
-]
-config = model_configs[-5]
-# All available model datasets, depends on which weights
-# you use. More info could be found in data/config.py.
-datasets = [
-    'coco2014_dataset',
-    'coco2017_dataset',
-    'coco2017_testdev_dataset',
-    'flying_chairs_dataset',
-    'youtube_vis_dataset',
-]
-dataset = datasets[1]
-# Used tensorrt calibration
-calib_images = "/home/ernestas/test/calib_images"
-# Override some default configuration
-config_ovr = {
-    'use_fast_nms': True,  # Does not work with regular nms
-    'mask_proto_debug': False
-}
-model_inference = YOLACTEdgeInference(
-    weights, config, dataset, calib_images, config_ovr)
-img = cv2.imread("me.jpg")
-print("Benchmarking performance...")
-start = time.time()
-samples = 200
-for i in range(samples):
-    p = model_inference.predict(img, False)
-print(f"Average {1 / ( (time.time() - start) / samples )} FPS")
-```
+ 2) Use it as in the example provided in ```pkg_usage.py```
 
 ## Training
 Make sure to download the entire dataset using the commands above.
