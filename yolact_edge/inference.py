@@ -291,10 +291,11 @@ class YOLACTEdgeInference(object):
         extras = {"backbone": "full", "interrupt": False,
                   "keep_statistics": False, "moving_statistics": None}
 
-        preds = self.net(batch, extras=extras)["pred_outs"]
+        with torch.no_grad():
+            preds = self.net(batch, extras=extras)["pred_outs"]
 
-        out = self.prep_output(
-            preds, frame, None, None, undo_transform=False)
+            out = self.prep_output(
+                preds, frame, None, None, undo_transform=False)
 
         if out == None:
             print("No predictions!")
