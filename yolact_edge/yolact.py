@@ -9,15 +9,15 @@ from math import sqrt
 from typing import List, Tuple, Optional
 from torch import Tensor
 
-from data.config import cfg, mask_type
-from layers import Detect
-from layers.interpolate import InterpolateModule
-from layers.warp_utils import deform_op
-from backbone import construct_backbone
+from yolact_edge.data.config import cfg, mask_type
+from yolact_edge.layers import Detect
+from yolact_edge.layers.interpolate import InterpolateModule
+from yolact_edge.layers.warp_utils import deform_op
+from yolact_edge.backbone import construct_backbone
 
 import torch.backends.cudnn as cudnn
-from utils import timer
-from utils.functions import MovingAverage
+from yolact_edge.utils import timer
+from yolact_edge.utils.functions import MovingAverage
 
 import logging
 import os

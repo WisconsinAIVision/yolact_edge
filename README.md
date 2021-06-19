@@ -145,7 +145,11 @@ Use the help option to see a description of all available command line arguments
 ```Shell
 python eval.py --help
 ```
+### Programmatic inference
 
+You can use yolact_edge as a package in your own code. There are two steps to make this work:
+ 1) Install YOLACT edge as python package: ```pip install .```
+ 2) Use it as in the example provided in ```pkg_usage.py```
 
 ## Training
 Make sure to download the entire dataset using the commands above.
