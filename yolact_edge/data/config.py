@@ -27,7 +27,8 @@ COLORS = ((244,  67,  54),
 # These are in BGR and are for ImageNet
 MEANS = (103.94, 116.78, 123.68)
 STD   = (57.38, 57.12, 58.40)
-
+OVERALL_ANNOTATION_CLASSES=('flesh_ripe','flesh_unripe','flesh_pink')
+OVERALL_LABEL_MAP={0: 1, 1: 2, 2: 3}
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
                 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
@@ -168,7 +169,15 @@ dataset_base = Config({
     # Joint training
     'joint': None
 })
-
+overall_annotations_dataset = dataset_base.copy({
+    'name': 'overall_annotations_norway',
+    'train_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
+    'train_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/train_3cat.json',
+    'valid_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
+    'valid_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/test_3cat.json',
+    'has_gt': True,
+    'label_map': OVERALL_ANNOTATION_CLASSES
+})
 coco2014_dataset = dataset_base.copy({
     'name': 'COCO 2014',
     
@@ -195,6 +204,15 @@ coco2017_testdev_dataset = dataset_base.copy({
 
     'label_map': COCO_LABEL_MAP
 })
+coco2017_testdev_dataset = dataset_base.copy({
+    'name': 'COCO 2017 Test-Dev',
+
+    'valid_info': './data/coco/annotations/image_info_test-dev2017.json',
+    'has_gt': False,
+
+    'label_map': COCO_LABEL_MAP
+})
+
 
 flying_chairs_dataset = dataset_base.copy({
     'name': 'FlyingChairs',
@@ -791,6 +809,25 @@ yolact_base_config = coco_base_config.copy({
 
 yolact_edge_config = yolact_base_config.copy({
     'name': 'yolact_edge',
+    'torch2trt_max_calibration_images': 100,
+    'torch2trt_backbone_int8': True,
+    'torch2trt_protonet_int8': True,
+    'torch2trt_fpn': True,
+    'torch2trt_prediction_module': True,
+    'use_fast_nms': False
+})
+
+overall_annotation_config = yolact_edge_config.copy({
+    'name': 'overall_annotation',
+
+    # Dataset stuff
+    'dataset': overall_annotations_dataset,
+    'num_classes': len(overall_annotations_dataset.class_names) + 1,
+})
+
+yolact_edge_config_test = yolact_base_config.copy({
+    'name': 'yolact_edge_test',
+    
     'torch2trt_max_calibration_images': 100,
     'torch2trt_backbone_int8': True,
     'torch2trt_protonet_int8': True,

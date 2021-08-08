@@ -64,7 +64,7 @@ parser.add_argument('--gamma', default=None, type=float,
                     help='For each lr step, what to multiply the lr by. Leave as None to read this from the config.')
 parser.add_argument('--save_folder', default='weights/',
                     help='Directory for saving checkpoint models')
-parser.add_argument('--log_folder', default='../../logs/',
+parser.add_argument('--log_folder', default='logs/',
                     help='Directory for saving Tensorboard logs')
 parser.add_argument('--config', default=None,
                     help='The config object to use.')
