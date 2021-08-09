@@ -28,7 +28,7 @@ COLORS = ((244,  67,  54),
 MEANS = (103.94, 116.78, 123.68)
 STD   = (57.38, 57.12, 58.40)
 OVERALL_ANNOTATION_CLASSES=('flesh_ripe','flesh_unripe','flesh_pink')
-OVERALL_LABEL_MAP={0: 1, 1: 2, 2: 3}
+OVERALL_ANNOTATION_LABEL_MAP={1: 1, 2: 2, 3: 3}
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
                 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
@@ -120,6 +120,7 @@ class Config(object):
         Note: new_config_dict can also be a config object.
         """
         if isinstance(new_config_dict, Config):
+          
             new_config_dict = vars(new_config_dict)
 
         for key, val in new_config_dict.items():
@@ -178,6 +179,19 @@ overall_annotations_dataset = dataset_base.copy({
     'has_gt': True,
     'label_map': OVERALL_ANNOTATION_CLASSES
 })
+
+overall_annotations_dataset_server = dataset_base.copy({
+        'name': 'overall_annotations_norway',
+        'train_images': '/datasets/OVERALL_ANNOTATION/',
+        'train_info': '/datasets/OVERALL_ANNOTATION/train_3cat.json',
+        'valid_images': '/datasets/OVERALL_ANNOTATION/',
+        'valid_info': '/datasets/OVERALL_ANNOTATION/test_3cat.json',
+                            
+        'class_names':('flesh_ripe','flesh_unripe','flesh_pink'),
+        'label_map':  {0:1,1:2,2:3}
+})
+
+
 coco2014_dataset = dataset_base.copy({
     'name': 'COCO 2014',
     
@@ -817,6 +831,15 @@ yolact_edge_config = yolact_base_config.copy({
     'use_fast_nms': False
 })
 
+overall_annotation_config_server = yolact_edge_config.copy({
+        'name': 'overall_annotation_server',
+
+        # Dataset stuff
+        'dataset': overall_annotations_dataset_server,
+        'num_classes': len(overall_annotations_dataset_server.class_names) + 1,
+})
+
+
 overall_annotation_config = yolact_edge_config.copy({
     'name': 'overall_annotation',
 
@@ -987,7 +1010,7 @@ def set_cfg(config_name:str):
     # Note this is not just an eval because I'm lazy, but also because it can
     # be used like ssd300_config.copy({'max_size': 400}) for extreme fine-tuning
     cfg.replace(eval(config_name))
-
+ 
 def set_dataset(dataset_name:str):
     """ Sets the dataset of the current config. """
     cfg.dataset = eval(dataset_name)
