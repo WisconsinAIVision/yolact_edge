@@ -28,7 +28,7 @@ COLORS = ((244,  67,  54),
 MEANS = (103.94, 116.78, 123.68)
 STD   = (57.38, 57.12, 58.40)
 OVERALL_ANNOTATION_CLASSES=('flesh_ripe','flesh_unripe','flesh_pink')
-OVERALL_ANNOTATION_LABEL_MAP={1: 1, 2: 2, 3: 3}
+OVERALL_ANNOTATION_LABEL_MAP={0: 1, 1: 2, 2: 3}
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
                 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
@@ -172,12 +172,13 @@ dataset_base = Config({
 })
 overall_annotations_dataset = dataset_base.copy({
     'name': 'overall_annotations_norway',
-    'train_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
-    'train_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/train_3cat.json',
-    'valid_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
-    'valid_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/test_3cat.json',
+    'train_images': '/datasets/OVERALL_ANNOTATION/',
+    'train_info': '/datasets/OVERALL_ANNOTATION/train_3cat.json',
+    'valid_images': '/datasets/OVERALL_ANNOTATION/',
+    'valid_info': '/datasets/OVERALL_ANNOTATION/test_3cat.json',
     'has_gt': True,
-    'label_map': OVERALL_ANNOTATION_CLASSES
+    'label_map': OVERALL_ANNOTATION_LABEL_MAP,
+    'class_names': OVERALL_ANNOTATION_CLASSES
 })
 
 overall_annotations_dataset_server = dataset_base.copy({
@@ -842,6 +843,7 @@ overall_annotation_config_server = yolact_edge_config.copy({
 
 overall_annotation_config = yolact_edge_config.copy({
     'name': 'overall_annotation',
+    'max_size':200,
 
     # Dataset stuff
     'dataset': overall_annotations_dataset,
