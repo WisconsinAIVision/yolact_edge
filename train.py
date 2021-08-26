@@ -1,5 +1,7 @@
+from PIL.Image import NONE
 from yolact_edge.utils import timer
 from yolact_edge.data import *
+from yolact_edge.utils import tensorboard_helper
 from yolact_edge.utils.augmentations import SSDAugmentation, SSDAugmentationVideo, BaseTransform, BaseTransformVideo
 from yolact_edge.utils.functions import MovingAverage, SavePath
 from yolact_edge.layers.modules import MultiBoxLoss
@@ -90,6 +92,8 @@ parser.add_argument('--interrupt_no_save', dest='interrupt_no_save', action='sto
                     help='Just exit when keyboard interrupt occurs for testing.')
 parser.add_argument('--no_warmup_rescale', dest='warmup_rescale', action='store_false',
                     help='Do not rescale warmup coefficients on multiple GPU training.')
+parser.add_argument('--display_tb', dest='display_tb', type=bool, default=True,
+                    help='To display example images on tensorboard')
 
 parser.set_defaults(keep_latest=False)
 args = parser.parse_args()
@@ -157,10 +161,12 @@ def train(rank, args):
     random.seed(seed)
 
     # set up logger
-    setup_logger(output=os.path.join(args.log_folder, cfg.name), distributed_rank=rank)
+    now = datetime.datetime.now()
+    results_folder = now.strftime('%y%m%d-%H%M%S')
+    setup_logger(output=os.path.join(args.log_folder, cfg.name,results_folder), distributed_rank=rank)
     logger = logging.getLogger("yolact.train")
 
-    w = SummaryHelper(distributed_rank=rank, log_dir=os.path.join(args.log_folder, cfg.name))
+    w = SummaryHelper(distributed_rank=rank, log_dir=os.path.join(args.log_folder, cfg.name,results_folder))
     w.add_text("argv", " ".join(sys.argv))
     logger.info("Args: {}".format(" ".join(sys.argv)))
     import git
@@ -600,7 +606,7 @@ time: {time}  data_time: {data_time}  lr: {lr}  {memory}\
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
                     if rank == 0:
-                        compute_validation_map(yolact_net, val_dataset)
+                        compute_validation_map(yolact_net, val_dataset,tb_helper=w, display_tb=args.display_tb, epoch=epoch )
                     misc.barrier()
 
     except KeyboardInterrupt:
@@ -687,12 +693,12 @@ def compute_validation_loss(net, data_loader, criterion):
         loss_labels = sum([[k, losses[k]] for k in loss_types if k in losses], [])
         print(('Validation ||' + (' %s: %.3f |' * len(losses)) + ')') % tuple(loss_labels), flush=True)
 
-def compute_validation_map(yolact_net, dataset):
+def compute_validation_map(yolact_net, dataset,tb_helper = None,display_tb = True, epoch = None):
     with torch.no_grad():
         yolact_net.eval()
         logger = logging.getLogger("yolact.eval")
         logger.info("Computing validation mAP (this may take a while)...")
-        eval_script.evaluate(yolact_net, dataset, train_mode=True, train_cfg=cfg)
+        eval_script.evaluate(yolact_net, dataset, train_mode=True, train_cfg=cfg, tb_helper = tb_helper, display_tb=args.display_tb, epoch = epoch)
         yolact_net.train()
 
 def setup_eval():

@@ -28,7 +28,7 @@ COLORS = ((244,  67,  54),
 MEANS = (103.94, 116.78, 123.68)
 STD   = (57.38, 57.12, 58.40)
 OVERALL_ANNOTATION_CLASSES=('flesh_ripe','flesh_unripe','flesh_pink')
-OVERALL_ANNOTATION_LABEL_MAP={1: 1, 2: 2, 3: 3}
+OVERALL_ANNOTATION_LABEL_MAP={0: 1, 1: 2, 2: 3}
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
                 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
@@ -170,14 +170,26 @@ dataset_base = Config({
     # Joint training
     'joint': None
 })
+debug_dataset = dataset_base.copy({
+    'name':'debug_dataset',
+    'train_images': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL',
+    'train_info': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL/coco.json',
+    'valid_images': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL',
+    'valid_info': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL/coco.json',
+                            
+    'class_names':('flesh_ripe','flesh_unripe'),
+    'label_map':  {0:1,1:2}
+
+})
 overall_annotations_dataset = dataset_base.copy({
     'name': 'overall_annotations_norway',
-    'train_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
-    'train_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/train_3cat.json',
-    'valid_images': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/data',
-    'valid_info': '/home/saul/Projects/berry_segmentation/data/OVERALL_ANNOTATION/test_3cat.json',
-    'has_gt': True,
-    'label_map': OVERALL_ANNOTATION_CLASSES
+    'train_images': '/home/appuser/datasets/OVERALL_ANNOTATION',
+    'train_info': '/home/appuser/datasets/OVERALL_ANNOTATION/train_3cat.json',
+    'valid_images': '/home/appuser/datasets/OVERALL_ANNOTATION',
+    'valid_info': '/home/appuser/datasets/OVERALL_ANNOTATION/test_3cat.json',
+                            
+    'class_names':('flesh_ripe','flesh_unripe','flesh_pink'),
+    'label_map':  {0:1,1:2,2:3}
 })
 
 overall_annotations_dataset_server = dataset_base.copy({
@@ -836,7 +848,7 @@ overall_annotation_config_server = yolact_edge_config.copy({
 
         # Dataset stuff
         'dataset': overall_annotations_dataset_server,
-        'num_classes': len(overall_annotations_dataset_server.class_names) + 1,
+        'num_classes': len(overall_annotations_dataset_server.class_names) + 1
 })
 
 
@@ -845,7 +857,17 @@ overall_annotation_config = yolact_edge_config.copy({
 
     # Dataset stuff
     'dataset': overall_annotations_dataset,
-    'num_classes': len(overall_annotations_dataset.class_names) + 1,
+    'num_classes': len(overall_annotations_dataset.class_names) + 1
+})
+
+debug_config=yolact_edge_config.copy({
+    'max_size': 32,
+    'freeze_bn': True,
+    'lr': 25e-5,
+    'dataset': debug_dataset,
+    'num_classes': len(debug_dataset.class_names) + 1
+
+
 })
 
 yolact_edge_config_test = yolact_base_config.copy({
