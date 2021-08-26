@@ -1,37 +1,35 @@
-from yolact_edge.data import COCODetection, YoutubeVIS, get_label_map, MEANS, COLORS
-from yolact_edge.data import cfg, set_cfg, set_dataset
-from yolact_edge.yolact import Yolact
-from yolact_edge.utils.augmentations import BaseTransform, BaseTransformVideo, FastBaseTransform, Resize
-from yolact_edge.utils.functions import MovingAverage, ProgressBar
-from yolact_edge.layers.box_utils import jaccard, center_size
-from yolact_edge.utils import timer
-from yolact_edge.utils.functions import SavePath
-from yolact_edge.layers.output_utils import postprocess, undo_image_transformation
-from yolact_edge.utils.tensorrt import convert_to_tensorrt
+import argparse
+import cProfile
+import json
+import logging
+import math
+import os
+import pickle
+import random
+import time
+from collections import OrderedDict, defaultdict
+from pathlib import Path
 
-import pycocotools
-
+import cv2
+import matplotlib.pyplot as plt
 import numpy as np
+import pycocotools
 import torch
 import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-import argparse
-import time
-import random
-import cProfile
-import pickle
-import json
-import os
-from collections import defaultdict
-from pathlib import Path
-from collections import OrderedDict
 from PIL import Image
+from torch.autograd import Variable
 
-import matplotlib.pyplot as plt
-import cv2
-import logging
-
-import math
+from yolact_edge.data import (COLORS, MEANS, COCODetection, YoutubeVIS, cfg,
+                              get_label_map, set_cfg, set_dataset)
+from yolact_edge.layers.box_utils import center_size, jaccard
+from yolact_edge.layers.output_utils import (postprocess,
+                                             undo_image_transformation)
+from yolact_edge.utils import timer
+from yolact_edge.utils.augmentations import (BaseTransform, BaseTransformVideo,
+                                             FastBaseTransform, Resize)
+from yolact_edge.utils.functions import MovingAverage, ProgressBar, SavePath
+from yolact_edge.utils.tensorrt import convert_to_tensorrt
+from yolact_edge.yolact import Yolact
 
 
 def str2bool(v):
@@ -128,7 +126,7 @@ def parse_args(argv=None):
                         help='Directory of images for TensorRT INT8 calibration, for explanation of this field, please refer to `calib_images` in `data/config.py`.')
     parser.add_argument('--trt_batch_size', default=1, type=int,
                         help='Maximum batch size to use during TRT conversion. This has to be greater than or equal to the batch size the model will take during inferece.')
-    parser.add_argument('--disable_tensorrt', default=False, dest='disable_tensorrt', action='store_true',
+    parser.add_argument('--disable_tensorrt', default=True, dest='disable_tensorrt', action='store_true',
                         help='Don\'t use TensorRT optimization when specified.')
     parser.add_argument('--use_fp16_tensorrt', default=False, dest='use_fp16_tensorrt', action='store_true',
                         help='This replaces all TensorRT INT8 optimization with FP16 optimization when specified.')
@@ -642,6 +640,7 @@ def evalimages(net:Yolact, input_folder:str, output_folder:str, detections:Detec
 from multiprocessing.pool import ThreadPool
 from queue import Queue
 
+
 class CustomDataParallel(torch.nn.DataParallel):
     """ A Custom Data Parallel class that properly gathers lists of dictionaries. """
     def gather(self, outputs, output_device):
@@ -890,7 +889,7 @@ def savevideo(net:Yolact, in_path:str, out_path:str):
     print()
 
 
-def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
+def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None, tb_helper=None, display_tb=True, epoch = None):
     net.detect.use_fast_nms = args.fast_nms
     cfg.mask_proto_debug = args.mask_proto_debug
 
@@ -978,7 +977,8 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
             if train_cfg is None:
                 train_cfg = cfg
 
-            from data.youtube_vis import YoutubeVISEval, collate_fn_youtube_vis_eval
+            from data.youtube_vis import (YoutubeVISEval,
+                                          collate_fn_youtube_vis_eval)
 
             eval_dataset = YoutubeVISEval(dataset, dataset_indices, args.max_images)
 
@@ -1075,6 +1075,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
 
         else:
             # Main eval loop
+            img_tensors = None
             for it, image_idx in enumerate(dataset_indices):
                 timer.reset()
 
@@ -1097,6 +1098,24 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
                     preds = net(batch, extras=extras)["pred_outs"]
 
                 # Perform the meat of the operation here depending on our mode.
+                if display_tb:
+                    eg_images = 5
+                    if it < eg_images:
+                        img_numpy = prep_display(preds, img, h, w)
+                        img_numpy=cv2.cvtColor(img_numpy, cv2.COLOR_BGR2RGB)
+                        if img_tensors is not None:
+                            img_tensor_prev = img_tensors
+                            img_tensors = torch.Tensor(np.expand_dims(np.moveaxis(img_numpy,2,0),0)).cuda()
+
+                            img_tensors = torch.cat([img_tensor_prev,img_tensors],dim=0)
+                        else:
+                            img_tensors = torch.Tensor(np.expand_dims(np.moveaxis(img_numpy,2,0),0)).cuda()
+                        
+                    if it == eg_images:
+                        tb_helper.add_images('epoch_'+str(epoch),img_tensors)
+
+                        #tb_helper.add_images('image',np.moveaxis(img_numpy,2,0))
+
                 if args.display:
                     img_numpy = prep_display(preds, img, h, w)
                 elif args.benchmark:
@@ -1137,7 +1156,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
                     with open(args.ap_data_file, 'wb') as f:
                         pickle.dump(ap_data, f)
 
-                calc_map(ap_data)
+                calc_map(ap_data,tb_helper=tb_helper)
         elif args.benchmark:
             print()
             print()
@@ -1151,7 +1170,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
             print()
             logger = logging.getLogger("yolact.eval")
             logger.info('Stopping early, calculate AP based on finished proportion...')
-            calc_map(ap_data)
+            calc_map(ap_data.tb_h)
         elif args.benchmark:
             print()
             print()
@@ -1161,7 +1180,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None):
             print('Average: %5.2f fps, %5.2f ms' % (1 / frame_times.get_avg(), 1000*avg_seconds))
 
 
-def calc_map(ap_data):
+def calc_map(ap_data,tb_helper=None):
     logger = logging.getLogger("yolact.eval")
     logger.info('Calculating mAP...')
     aps = [{'box': [], 'mask': []} for _ in iou_thresholds]
@@ -1183,7 +1202,11 @@ def calc_map(ap_data):
             mAP = sum(aps[i][iou_type]) / len(aps[i][iou_type]) * 100 if len(aps[i][iou_type]) > 0 else 0
             all_maps[iou_type][int(threshold*100)] = mAP
         all_maps[iou_type]['all'] = (sum(all_maps[iou_type].values()) / (len(all_maps[iou_type].values())-1))
-    
+    if tb_helper is not None:
+        for i in all_maps:
+            for j in all_maps[i]:
+                tb_helper.add_scalar(i+'_ap/'+str(j),round(all_maps[i][j],2))
+            print(i)
     print_maps(all_maps)
 
 def print_maps(all_maps):
@@ -1199,6 +1222,7 @@ def print_maps(all_maps):
     output_str += make_sep(len(all_maps['box']) + 1)
     logger = logging.getLogger("yolact.eval")
     logger.info(output_str)
+    #upload to tensorboard
 
 
 

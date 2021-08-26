@@ -170,8 +170,20 @@ dataset_base = Config({
     # Joint training
     'joint': None
 })
+debug_dataset = dataset_base.copy({
+    'name':'debug_dataset',
+    'train_images': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL',
+    'train_info': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL/coco.json',
+    'valid_images': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL',
+    'valid_info': '/home/appuser/datasets/OVERALL_ANNOTATION_SMALL/coco.json',
+                            
+    'class_names':('flesh_ripe','flesh_unripe'),
+    'label_map':  {0:1,1:2}
+
+})
 overall_annotations_dataset = dataset_base.copy({
     'name': 'overall_annotations_norway',
+
     'train_images': '/datasets/OVERALL_ANNOTATION/',
     'train_info': '/datasets/OVERALL_ANNOTATION/train_3cat.json',
     'valid_images': '/datasets/OVERALL_ANNOTATION/',
@@ -179,6 +191,7 @@ overall_annotations_dataset = dataset_base.copy({
     'has_gt': True,
     'label_map': OVERALL_ANNOTATION_LABEL_MAP,
     'class_names': OVERALL_ANNOTATION_CLASSES
+
 })
 
 overall_annotations_dataset_server = dataset_base.copy({
@@ -837,7 +850,7 @@ overall_annotation_config_server = yolact_edge_config.copy({
 
         # Dataset stuff
         'dataset': overall_annotations_dataset_server,
-        'num_classes': len(overall_annotations_dataset_server.class_names) + 1,
+        'num_classes': len(overall_annotations_dataset_server.class_names) + 1
 })
 
 
@@ -847,7 +860,17 @@ overall_annotation_config = yolact_edge_config.copy({
 
     # Dataset stuff
     'dataset': overall_annotations_dataset,
-    'num_classes': len(overall_annotations_dataset.class_names) + 1,
+    'num_classes': len(overall_annotations_dataset.class_names) + 1
+})
+
+debug_config=yolact_edge_config.copy({
+    'max_size': 32,
+    'freeze_bn': True,
+    'lr': 25e-5,
+    'dataset': debug_dataset,
+    'num_classes': len(debug_dataset.class_names) + 1
+
+
 })
 
 yolact_edge_config_test = yolact_base_config.copy({
