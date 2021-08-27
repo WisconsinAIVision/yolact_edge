@@ -11,6 +11,7 @@ from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import cv2
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pycocotools
@@ -30,6 +31,7 @@ from yolact_edge.utils.augmentations import (BaseTransform, BaseTransformVideo,
 from yolact_edge.utils.functions import MovingAverage, ProgressBar, SavePath
 from yolact_edge.utils.tensorrt import convert_to_tensorrt
 from yolact_edge.yolact import Yolact
+import torchvision
 
 
 def str2bool(v):
@@ -1075,7 +1077,11 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None, tb_helper=No
 
         else:
             # Main eval loop
-            img_tensors = None
+            eg_images = 5
+            fig,ax=plt.subplots(1,eg_images)
+            fig.tight_layout()
+
+            plt.close(fig)
             for it, image_idx in enumerate(dataset_indices):
                 timer.reset()
 
@@ -1099,22 +1105,17 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None, tb_helper=No
 
                 # Perform the meat of the operation here depending on our mode.
                 if display_tb:
-                    eg_images = 5
                     if it < eg_images:
                         img_numpy = prep_display(preds, img, h, w)
-                        img_numpy=cv2.cvtColor(img_numpy, cv2.COLOR_BGR2RGB)
-                        if img_tensors is not None:
-                            img_tensor_prev = img_tensors
-                            img_tensors = torch.Tensor(np.expand_dims(np.moveaxis(img_numpy,2,0),0)).cuda()
 
-                            img_tensors = torch.cat([img_tensor_prev,img_tensors],dim=0)
-                        else:
-                            img_tensors = torch.Tensor(np.expand_dims(np.moveaxis(img_numpy,2,0),0)).cuda()
-                        
+                        ax[it].imshow(img_numpy)
+                        ax[it].grid(False)
+                        ax[it].set_xticks([])
+                        ax[it].set_yticks([])
+
                     if it == eg_images:
-                        tb_helper.add_images('epoch_'+str(epoch),img_tensors)
+                        tb_helper.add_figure('epoch_'+str(epoch),fig)
 
-                        #tb_helper.add_images('image',np.moveaxis(img_numpy,2,0))
 
                 if args.display:
                     img_numpy = prep_display(preds, img, h, w)
