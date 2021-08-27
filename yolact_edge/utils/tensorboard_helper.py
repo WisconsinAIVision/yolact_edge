@@ -19,6 +19,10 @@ class SummaryHelper(object):
     def add_images(self, key, value):
         if self.w is None: return
         self.w.add_images(key, value, self.step)
+    
+    def add_figure(self, key, value):
+        if self.w is None: return
+        self.w.add_figure(key, value, self.step)
 
     def set_step(self, step):
         self.step = step
