@@ -1079,7 +1079,7 @@ def evaluate(net:Yolact, dataset, train_mode=False, train_cfg=None, tb_helper=No
             # Main eval loop
             eg_images = 5
             fig,ax=plt.subplots(1,eg_images)
-            fig.set_size_inches(18.5, 3)
+            fig.set_size_inches(40, 3)
 
             plt.close(fig)
             for it, image_idx in enumerate(dataset_indices):

@@ -181,6 +181,20 @@ debug_dataset = dataset_base.copy({
     'label_map':  {0:1,1:2}
 
 })
+strawberry_dataset=dataset_base.copy({
+    'name': 'strawberry_base',
+    'class_names': ('flesh_ripe','flesh_unripe'),
+    'label_map': {0: 1, 1: 2}
+
+    })
+
+bag_610_dataset= strawberry_dataset.copy({
+    'name':'bag_610',
+    'train_images':'/datasets/610babd54e5e825f560b66b2',
+    'train_info':'/datasets/610babd54e5e825f560b66b2/coco.json',
+    'valid_images':'/datasets/OVERALL_ANNOTATION/',
+    'valid_info':'/datasets/OVERALL_ANNOTATION/coco.json'
+    })
 overall_annotations_dataset = dataset_base.copy({
     'name': 'overall_annotations_norway',
 
@@ -844,6 +858,15 @@ yolact_edge_config = yolact_base_config.copy({
     'torch2trt_prediction_module': True,
     'use_fast_nms': False
 })
+
+
+bag_610_config= yolact_edge_config.copy({
+    'name': 'bag_610',
+    'dataset': bag_610_dataset,
+    'num_classes': len(bag_610_dataset.class_names) + 1
+})  
+
+
 
 overall_annotation_config_server = yolact_edge_config.copy({
         'name': 'overall_annotation_server',
