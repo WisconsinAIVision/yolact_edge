@@ -193,7 +193,10 @@ bag_610_dataset= strawberry_dataset.copy({
     'train_images':'/datasets/610babd54e5e825f560b66b2',
     'train_info':'/datasets/610babd54e5e825f560b66b2/coco.json',
     'valid_images':'/datasets/OVERALL_ANNOTATION/',
-    'valid_info':'/datasets/OVERALL_ANNOTATION/coco.json'
+    'valid_info':'/datasets/OVERALL_ANNOTATION/coco.json',
+    # If using 3 class data then need to map pink to unripe
+    'label_map': {0: 1, 1: 2,2:2}
+
     })
 overall_annotations_dataset = dataset_base.copy({
     'name': 'overall_annotations_norway',

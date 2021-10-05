@@ -128,7 +128,7 @@ def parse_args(argv=None):
                         help='Directory of images for TensorRT INT8 calibration, for explanation of this field, please refer to `calib_images` in `data/config.py`.')
     parser.add_argument('--trt_batch_size', default=1, type=int,
                         help='Maximum batch size to use during TRT conversion. This has to be greater than or equal to the batch size the model will take during inferece.')
-    parser.add_argument('--disable_tensorrt', default=True, dest='disable_tensorrt', action='store_true',
+    parser.add_argument('--disable_tensorrt', default=False, dest='disable_tensorrt', action='store_true',
                         help='Don\'t use TensorRT optimization when specified.')
     parser.add_argument('--use_fp16_tensorrt', default=False, dest='use_fp16_tensorrt', action='store_true',
                         help='This replaces all TensorRT INT8 optimization with FP16 optimization when specified.')
