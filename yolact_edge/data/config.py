@@ -876,7 +876,9 @@ overall_annotation_config_server = yolact_edge_config.copy({
 
         # Dataset stuff
         'dataset': overall_annotations_dataset_server,
-        'num_classes': len(overall_annotations_dataset_server.class_names) + 1
+        'num_classes': len(overall_annotations_dataset_server.class_names) + 1,
+        'class_names':('flesh_ripe','flesh_unripe'),
+        'label_map':  {0:1,1:2}
 })
 
 
@@ -886,7 +888,9 @@ overall_annotation_config = yolact_edge_config.copy({
 
     # Dataset stuff
     'dataset': overall_annotations_dataset,
-    'num_classes': len(overall_annotations_dataset.class_names) + 1
+    'num_classes': len(overall_annotations_dataset.class_names) + 1,
+    'class_names':('flesh_ripe','flesh_unripe'),
+    'label_map':  {0:1,1:2}
 })
 
 debug_config=yolact_edge_config.copy({
