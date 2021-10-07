@@ -183,7 +183,6 @@ debug_dataset = dataset_base.copy({
 })
 strawberry_dataset=dataset_base.copy({
     'name': 'strawberry_base',
-    'class_names': ('ripe','unripe'),
     'label_map': {0: 1, 1: 2}
 
     })
@@ -866,6 +865,7 @@ yolact_edge_config = yolact_base_config.copy({
 bag_610_config= yolact_edge_config.copy({
     'name': 'bag_610',
     'dataset': bag_610_dataset,
+    'class_names': ('ripe','unripe'),
     'num_classes': len(bag_610_dataset.class_names) + 1
 })  
 
