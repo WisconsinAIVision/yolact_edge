@@ -27,7 +27,7 @@ COLORS = ((244,  67,  54),
 # These are in BGR and are for ImageNet
 MEANS = (103.94, 116.78, 123.68)
 STD   = (57.38, 57.12, 58.40)
-OVERALL_ANNOTATION_CLASSES=('flesh_ripe','flesh_unripe','flesh_pink')
+OVERALL_ANNOTATION_CLASSES=('ripe','unripe','pink')
 OVERALL_ANNOTATION_LABEL_MAP={0: 1, 1: 2, 2: 3}
 COCO_CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                 'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
@@ -183,7 +183,7 @@ debug_dataset = dataset_base.copy({
 })
 strawberry_dataset=dataset_base.copy({
     'name': 'strawberry_base',
-    'class_names': ('flesh_ripe','flesh_unripe'),
+    'class_names': ('ripe','unripe'),
     'label_map': {0: 1, 1: 2}
 
     })
@@ -218,7 +218,7 @@ overall_annotations_dataset_server = dataset_base.copy({
         'valid_images': '/datasets/OVERALL_ANNOTATION/',
         'valid_info': '/datasets/OVERALL_ANNOTATION/test_3cat.json',
                             
-        'class_names':('flesh_ripe','flesh_unripe','flesh_pink'),
+        'class_names':('ripe','unripe','pink'),
         'label_map':  {0:1,1:2,2:3}
 })
 
