@@ -193,6 +193,8 @@ bag_610_dataset= strawberry_dataset.copy({
     'train_info':'/datasets/610babd54e5e825f560b66b2/coco.json',
     'valid_images':'/datasets/OVERALL_ANNOTATION/',
     'valid_info':'/datasets/OVERALL_ANNOTATION/coco.json',
+    'class_names': ('ripe','unripe'),
+
     # If using 3 class data then need to map pink to unripe
     'label_map': {0: 1, 1: 2,2:2}
 
@@ -865,7 +867,6 @@ yolact_edge_config = yolact_base_config.copy({
 bag_610_config= yolact_edge_config.copy({
     'name': 'bag_610',
     'dataset': bag_610_dataset,
-    'class_names': ('ripe','unripe'),
     'num_classes': len(bag_610_dataset.class_names) + 1
 })  
 
