@@ -1,15 +1,20 @@
 # ----- L4T_IMAGE ------
-# ホストのJetpackバージョンと同じタグのイメージを指定してください。
-# cat /etc/nv_tegra_release 
+# Specify an image with the same tag as your host's Jetpack version.
+# [Example]
+# $ cat /etc/nv_tegra_release 
 # >> R32 (release), REVISION: 5.0, GCID: 25531747, BOARD: t186ref, EABI: aarch64, DATE: Fri Jan 15 23:21:05 UTC 2021
-# 上記ならr32.5.0
-# (ex.) docker build --build-arg L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.5.0-pth1.6-py3
+# In this case, use r32.5.0
+# (ex. use r32.5.0) 
+# $ docker build --build-arg L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.5.0-pth1.6-py3
+
 # ----- JETSON_PLATFORM -----
 # <platform> identifies the platform’s processor:
 # t186 for Jetson TX2 series
 # t194 for Jetson AGX Xavier series or Jetson Xavier NX
 # t210 for Jetson Nano devices or Jetson TX1
-# (ex.AGX Xavierの場合) docker build --build-arg L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.5.0-pth1.6-py3 --build-arg JETSON_PLATFORM=t194
+# (ex. In this case, use AGX Xavier) 
+# $ docker build --build-arg L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.5.0-pth1.6-py3 --build-arg JETSON_PLATFORM=t194
+
 ARG L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3
 ARG JETSON_PLATFORM=t194
 
