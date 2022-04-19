@@ -7,8 +7,8 @@ from yolact_edge.utils import timer
 from yolact_edge.data.config import cfg
 
 try:
-    from torch2trt import torch2trt
-    from torch2trt.torch2trt import TRTModule
+    from torch2trt_dynamic import torch2trt_dynamic
+    from torch2trt_dynamic.torch2trt_dynamic import TRTModule
     use_torch2trt = True
 except:
     use_torch2trt = False
