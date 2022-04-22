@@ -140,7 +140,7 @@ class PredictionModule(nn.Module):
 
         self.num_classes = cfg.num_classes
         self.mask_dim    = cfg.mask_dim
-        self.num_priors  = sum(len(x) for x in aspect_ratios)
+        self.num_priors = sum(len(x) * len(scales) for x in aspect_ratios)
         self.parent      = [parent] # Don't include this in the state dict
         self.index       = index
 
