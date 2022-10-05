@@ -62,7 +62,7 @@ class COCODetection(data.Dataset):
     """
 
     def __init__(self, image_path, info_file, transform=None,
-                 target_transform=COCOAnnotationTransform(),
+                 target_transform=None,
                  dataset_name='MS COCO', has_gt=True):
         # Do this here because we have too many things named COCO
         from pycocotools.coco import COCO
@@ -75,7 +75,7 @@ class COCODetection(data.Dataset):
             self.ids = list(self.coco.imgs.keys())
         
         self.transform = transform
-        self.target_transform = target_transform
+        self.target_transform = target_transform if target_transform is not None else COCOAnnotationTransform()
         
         self.name = dataset_name
         self.has_gt = has_gt
