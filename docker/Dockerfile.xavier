@@ -15,7 +15,7 @@
 # (ex. In this case, use AGX Xavier) 
 # $ docker build --build-arg L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.5.0-pth1.6-py3 --build-arg JETSON_PLATFORM=t194
 
-ARG L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.4.4-pth1.6-py3
+ARG L4T_IMAGE=nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth1.10-py3
 ARG JETSON_PLATFORM=t194
 
 FROM ${L4T_IMAGE}
@@ -42,19 +42,31 @@ RUN L4T_REPO_VERSION=`python3 -c 'import sys; print(".".join((sys.argv[1].split(
 RUN ln -svf /usr/bin/python3 /usr/bin/python
 RUN python -m pip install --upgrade --force pip
 
-# # Install dependencies
+# Install dependencies
 RUN pip install cython pillow matplotlib GitPython termcolor tensorboard
 RUN pip install git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools&subdirectory=PythonAPI"
 
-# torch2trt
+# torch2trt_dynamic
 WORKDIR /root
-RUN git clone https://github.com/NVIDIA-AI-IOT/torch2trt &&\
-    cd torch2trt &&\
-    python setup.py install --plugins
+RUN git clone https://github.com/grimoire/torch2trt_dynamic.git torch2trt_dynamic
+WORKDIR /root/torch2trt_dynamic
+RUN python setup.py develop
 
+
+# installing plugins
 WORKDIR /root
-RUN ln -s /yolact_edge
-RUN ln -s /datasets
-WORKDIR /root/yolact_edge
+RUN apt update && apt install -y software-properties-common && \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && \
+    apt update && apt install -y cmake && \
+    git clone --depth=1 https://github.com/grimoire/amirstan_plugin.git && \
+    cd amirstan_plugin && \
+    git submodule update --init --progress --depth=1 && \
+    cmake -DTENSORRT_DIR=/usr/include/aarch64-linux-gnu  && \
+    make -j$(nproc)
+
+ENV AMIRSTAN_LIBRARY_PATH=/root/amirstan_plugin/lib
+
+WORKDIR /workspace
 
 ENV LANG C.UTF-8
