@@ -272,28 +272,29 @@ class PredictionModule(nn.Module):
                     x = (i + 0.5) / conv_w
                     y = (j + 0.5) / conv_h
                     
-                    for scale, ars in zip(self.scales, self.aspect_ratios):
-                        for ar in ars:
-                            if not cfg.backbone.preapply_sqrt:
-                                ar = sqrt(ar)
+                    for scale, ars in zip([self.scales], self.aspect_ratios):
+                        for sca in scale:
+                            for ar in ars:
+                                if not cfg.backbone.preapply_sqrt:
+                                    ar = sqrt(ar)
 
-                            if cfg.backbone.use_pixel_scales:
-                                if type(cfg.max_size) == tuple:
-                                    width, height = cfg.max_size
-                                    w = scale * ar / width
-                                    h = scale / ar / height
+                                if cfg.backbone.use_pixel_scales:
+                                    if type(cfg.max_size) == tuple:
+                                        width, height = cfg.max_size
+                                        w = sca * ar / width
+                                        h = sca / ar / height
+                                    else:
+                                        w = sca * ar / cfg.max_size
+                                        h = sca / ar / cfg.max_size
                                 else:
-                                    w = scale * ar / cfg.max_size
-                                    h = scale / ar / cfg.max_size
-                            else:
-                                w = scale * ar / conv_w
-                                h = scale / ar / conv_h
+                                    w = sca * ar / conv_w
+                                    h = sca / ar / conv_h
                             
-                            # This is for backward compatability with a bug where I made everything square by accident
-                            if cfg.backbone.use_square_anchors:
-                                h = w
+                                # This is for backward compatability with a bug where I made everything square by accident
+                                if cfg.backbone.use_square_anchors:
+                                    h = w
 
-                            prior_data += [x, y, w, h]
+                                prior_data += [x, y, w, h]
                 
                 self.priors = torch.Tensor(prior_data).view(-1, 4)
                 self.last_conv_size = (conv_w, conv_h)
