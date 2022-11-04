@@ -10,7 +10,7 @@ import cv2
 from yolact_edge.data import cfg, mask_type, MEANS, STD, activation_func
 from yolact_edge.utils.augmentations import Resize
 from yolact_edge.utils import timer
-from .box_utils import crop, sanitize_coordinates
+from .box_utils import crop, sanitize_coordinates, center_size
 
 def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
                 visualize_lincomb=False, crop_masks=True, score_threshold=0):
