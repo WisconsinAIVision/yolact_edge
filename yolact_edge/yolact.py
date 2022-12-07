@@ -25,8 +25,8 @@ import os
 import copy
 
 try:
-    from torch2trt_dynamic import torch2trt_dynamic
-    from torch2trt_dynamic.torch2trt_dynamic import TRTModule
+    from torch2trt import torch2trt
+    from torch2trt.torch2trt import TRTModule
     use_torch2trt = True
 except:
     use_torch2trt = False
@@ -140,7 +140,7 @@ class PredictionModule(nn.Module):
 
         self.num_classes = cfg.num_classes
         self.mask_dim    = cfg.mask_dim
-        self.num_priors = sum(len(x) * len(scales) for x in aspect_ratios)
+        self.num_priors  = sum(len(x) for x in aspect_ratios)
         self.parent      = [parent] # Don't include this in the state dict
         self.index       = index
 
@@ -256,7 +256,7 @@ class PredictionModule(nn.Module):
 
         if cfg.use_instance_coeff:
             preds['inst'] = inst
-
+        
         return preds
     
     def make_priors(self, conv_h, conv_w):
@@ -553,9 +553,9 @@ class PredictionModuleTRTWrapper(nn.Module):
 
     def to_tensorrt(self, int8_mode=False, calibration_dataset=None, batch_size=1):
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         input_sizes = [
                 (1, 256, 69, 69),
@@ -1062,6 +1062,7 @@ class FPN(ScriptModuleWrapper):
             for idx in range(self.num_downsample):
                 # Note: this is an untested alternative to out.append(out[-1][:, :, ::2, ::2]). Thanks TorchScript.
                 out.append(nn.functional.max_pool2d(out[-1], 1, stride=2))
+
         return out
 
 
@@ -1488,122 +1489,9 @@ class Yolact(nn.Module):
         """Converts the Backbone to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size, max_workspace_size=1 << 30)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size, max_workspace_size=1 << 30)
-
-        if cfg.backbone.name == "ResNet50_DCNv2" or cfg.backbone.name == "ResNet101_DCN_Interval3":
-
-            import tensorrt as trt
-            from torch2trt_dynamic import tensorrt_converter
-            import ctypes
-            from collections.abc import Iterable
-
-            # You can set the logger severity higher to suppress messages (or lower to display more messages).
-            TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
-
-            trt.init_libnvinfer_plugins(TRT_LOGGER, '')
-
-            try:
-                ctypes.cdll.LoadLibrary('/root/amirstan_plugin/lib/libamirstan_plugin.so')
-            except OSError as e:
-                raise SystemExit('ERROR: failed to load libamirstan_plugin.so'
-                                 'Did you forget to do a "make" in the "amirstan_plugin/" '
-                                 'subdirectory?') from e
-
-            def create_dcnv2_plugin(layer_name,
-                                    stride=[1, 1],
-                                    padding=[0, 0],
-                                    dilation=[1, 1],
-                                    deformable_group=1,
-                                    group=1):
-
-                creator = trt.get_plugin_registry().get_plugin_creator(
-                    'ModulatedDeformableConvPluginDynamic', '1', '')
-                if not isinstance(stride, Iterable):
-                    stride = [stride, stride]
-
-                if not isinstance(padding, Iterable):
-                    padding = [padding, padding]
-
-                if not isinstance(dilation, Iterable):
-                    dilation = [dilation, dilation]
-
-                pfc = trt.PluginFieldCollection()
-
-                pf_stride = trt.PluginField('stride', np.array(stride, dtype=np.int32),
-                                            trt.PluginFieldType.INT32)
-                pfc.append(pf_stride)
-
-                pf_padding = trt.PluginField('padding', np.array(padding, dtype=np.int32),
-                                             trt.PluginFieldType.INT32)
-                pfc.append(pf_padding)
-
-                pf_dilation = trt.PluginField('dilation',
-                                              np.array(dilation, dtype=np.int32),
-                                              trt.PluginFieldType.INT32)
-                pfc.append(pf_dilation)
-
-                pf_deformable_group = trt.PluginField(
-                    'deformable_group', np.array([deformable_group], dtype=np.int32),
-                    trt.PluginFieldType.INT32)
-                pfc.append(pf_deformable_group)
-
-                pf_group = trt.PluginField('group', np.array([group], dtype=np.int32),
-                                           trt.PluginFieldType.INT32)
-                pfc.append(pf_group)
-
-                return creator.create_plugin(layer_name, pfc)
-
-            from torch2trt_dynamic.torch2trt_dynamic import (get_arg, trt_)
-            import yolact_edge.mod_dcn_v2
-            @tensorrt_converter('yolact_edge.mod_dcn_v2.modulated_deform_conv2d')
-            def convert_ModulatedDeformConv(ctx):
-                input = get_arg(ctx, 'input', pos=0, default=None)
-                offset = get_arg(ctx, 'offset', pos=1, default=None)
-                mask = get_arg(ctx, 'mask', pos=2, default=None)
-                weight = get_arg(ctx, 'weight', pos=3, default=None)
-                bias = get_arg(ctx, 'bias', pos=4, default=None)
-                stride = get_arg(ctx, 'stride', pos=5, default=1)
-                padding = get_arg(ctx, 'padding', pos=6, default=0)
-                dilation = get_arg(ctx, 'dilation', pos=7, default=1)
-                groups = get_arg(ctx, 'groups', pos=8, default=1)
-                deform_groups = get_arg(ctx, 'deform_groups', pos=9, default=1)
-
-                output = ctx.method_return
-
-                input_trt = trt_(ctx.network, input)
-                offset_trt = trt_(ctx.network, offset)
-                mask_trt = trt_(ctx.network, mask)
-                weight_trt = trt_(ctx.network, weight)
-                if bias is not None:
-                    bias_trt = trt_(ctx.network, bias)
-
-                if not isinstance(stride, tuple):
-                    stride = (stride,) * 2
-
-                if not isinstance(padding, tuple):
-                    padding = (padding,) * 2
-
-                if not isinstance(dilation, tuple):
-                    dilation = (dilation,) * 2
-
-                plugin = create_dcnv2_plugin(
-                    'dcn_' + str(id(input)),
-                    stride=stride,
-                    padding=padding,
-                    dilation=dilation,
-                    deformable_group=deform_groups,
-                    group=groups)
-
-                layer_inputs = [input_trt, offset_trt, mask_trt, weight_trt]
-                if bias is not None:
-                    layer_inputs += [bias_trt]
-                custom_layer = ctx.network.add_plugin_v2(
-                    inputs=layer_inputs, plugin=plugin)
-
-                output._trt = custom_layer.get_output(0)
-
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         x = torch.ones((1, 3, cfg.max_size, cfg.max_size)).cuda()
         # self.backbone = trt_fn(self.backbone, [x])
@@ -1615,9 +1503,9 @@ class Yolact(nn.Module):
         """Converts ProtoNet to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         x = torch.ones((1, 256, 69, 69)).cuda()
         # self.proto_net = trt_fn(self.proto_net, [x])
@@ -1627,13 +1515,13 @@ class Yolact(nn.Module):
         """Converts FPN to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         self.lat_layer = self.fpn_phase_1.lat_layers[-1]
 
-        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101" or cfg.backbone.name == "ResNet101_DCN_Interval3":
+        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101":
             x = [
                 torch.randn(1, 512, 69, 69).cuda(),
                 torch.randn(1, 1024, 35, 35).cuda(),
@@ -1650,7 +1538,7 @@ class Yolact(nn.Module):
 
         self.trt_load_if("fpn_phase_1", trt_fn, x, int8_mode, batch_size=batch_size)
 
-        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101" or cfg.backbone.name == "ResNet101_DCN_Interval3":
+        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101":
             x = [
                 torch.randn(1, 256, 69, 69).cuda(),
                 torch.randn(1, 256, 35, 35).cuda(),
@@ -1667,9 +1555,9 @@ class Yolact(nn.Module):
 
         self.trt_load_if("fpn_phase_2", trt_fn, x, int8_mode, batch_size=batch_size)
 
-        trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True)
+        trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True)
 
-        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101" or cfg.backbone.name == "ResNet101_DCN_Interval3":
+        if cfg.backbone.name == "ResNet50" or cfg.backbone.name == "ResNet101":
             x = torch.randn(1, 512, 69, 69).cuda()
         elif cfg.backbone.name == "MobileNetV2":
             x = torch.randn(1, 32, 69, 69).cuda()
@@ -1682,9 +1570,9 @@ class Yolact(nn.Module):
         """Converts Prediction Head to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         for idx, pred_layer in enumerate(self.prediction_layers):
             pred_layer = PredictionModuleTRTWrapper(pred_layer)
@@ -1695,9 +1583,9 @@ class Yolact(nn.Module):
         """Converts SPA to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
         c3 = torch.ones((1, 256, 69, 69)).cuda()
         f2 = torch.ones((1, 256, 35, 35)).cuda()
@@ -1709,9 +1597,9 @@ class Yolact(nn.Module):
         """Converts FlowNet to a TRTModule.
         """
         if int8_mode:
-            trt_fn = partial(torch2trt_dynamic, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, int8_mode=True, int8_calib_dataset=calibration_dataset, strict_type_constraints=True, max_batch_size=batch_size)
         else:
-            trt_fn = partial(torch2trt_dynamic, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
+            trt_fn = partial(torch2trt, fp16_mode=True, strict_type_constraints=True, max_batch_size=batch_size)
 
 
         lateral_channels = cfg.fpn.num_features
@@ -1873,7 +1761,7 @@ class Yolact(nn.Module):
                         pred_layer.parent = [self.prediction_layers[0]]
 
                 p = pred_layer(pred_x)
-
+                
                 for k, v in p.items():
                     pred_outs[k].append(v)
 
