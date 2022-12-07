@@ -1,51 +1,28 @@
 ## Installation
  - Set up a Python3 environment.
- - Install [Pytorch](http://pytorch.org/) 1.7.1 and TorchVision v.0.8.2.
- - Install [TensorRT](https://developer.nvidia.com/tensorrt) 8.2.1.8 and [torch2trt_dynamic](https://github.com/grimoire/torch2trt_dynamic) v0.5.0 (*optional* for evaluating models without TensorRT, currently TensorRT optimization only supports devices with [Tensor Cores](https://www.nvidia.com/en-us/data-center/tensor-cores/), and already included in [JetPack SDK](https://developer.nvidia.com/embedded/Jetpack) if using Jetson devices):
-   1. Install CUDA 10.2/11.4 and cuDNN 8.2.
-   2. Download TensorRT 8.2.1.8 tar file [here](https://developer.nvidia.com/nvidia-tensorrt-8x-download) and install TensorRT (refer to [official documentation](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-821/install-guide/index.html#installing-tar) for more details).
+ - Install [Pytorch](http://pytorch.org/) 1.6.0 and TorchVision.
+ - Install [TensorRT](https://developer.nvidia.com/tensorrt) 7.1.3.4 and [torch2trt](https://github.com/NVIDIA-AI-IOT/torch2trt) 0.1.0 (*optional* for evaluating models without TensorRT, currently TensorRT optimization only supports devices with [Tensor Cores](https://www.nvidia.com/en-us/data-center/tensor-cores/), and already included in [JetPack SDK](https://developer.nvidia.com/embedded/Jetpack) if using Jetson devices):
+   1. Install CUDA 10.2/11.0 and cuDNN 8.0.0.
+   2. Download TensorRT 7.1.3.4 tar file [here](https://developer.nvidia.com/nvidia-tensorrt-7x-download) and install TensorRT (refer to [official documentation](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-713/install-guide/index.html#installing-tar) for more details).
    ```Shell
-   version="8.x.x.x"
-   arch=$(uname -m)
-   cuda="cuda-x.x"
-   cudnn="cudnn8.x"
-   tar xzvf TensorRT-${version}.Linux.${arch}-gnu.${cuda}.${cudnn}.tar.gz
+   tar xzvf TensorRT-${version}.${os}.${arch}-gnu.${cuda}.${cudnn}.tar.gz
    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<TensorRT-${version}/lib>
 
    cd TensorRT-${version}/python
-   python3 -m pip install tensorrt-*-cp3x-none-linux_x86_64.whl
+   pip3 install tensorrt-*-cp3x-none-linux_x86_64.whl
    
    cd TensorRT-${version}/uff
-   python3 -m pip install uff-0.6.9-py2.py3-none-any.whl
+   pip3 install uff-0.6.9-py2.py3-none-any.whl
 
    cd TensorRT-${version}/graphsurgeon
-   python3 -m pip install graphsurgeon-0.4.5-py2.py3-none-any.whl
+   pip3 install graphsurgeon-0.4.5-py2.py3-none-any.whl
    ```
-   3. Install [torch2trt_dynamic](https://github.com/grimoire/torch2trt_dynamic).
+   3. Install [torch2trt](https://github.com/NVIDIA-AI-IOT/torch2trt).
    ```Shell
-   git clone https://github.com/grimoire/torch2trt_dynamic.git torch2trt_dynamic
-   cd torch2trt_dynamic 
-   python setup.py develop
+   git clone https://github.com/NVIDIA-AI-IOT/torch2trt
+   cd torch2trt
+   sudo python setup.py install --plugins
    ```
-   4. Install deformable convolution module to pytorch if you want to work with yolact_edge+ models. Go to ./external/mod_def_conv and run setup.py
-   ```Shell
-   cd external/mod_def_conv
-   python setup.py install
-   ```
-   5. Install [amirstan_plugin](https://github.com/grimoire/amirstan_plugin) which contain the deformable convolution plugin with dynamic shapes for TensorRT 8.x. IT is needed only if you want to work with yolact edge+ models.
-   ```Shell
-    apt install -y software-properties-common
-    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-    apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-    apt update && apt install -y cmake
-    git clone --depth=1 --branch v0.5.0 https://github.com/grimoire/amirstan_plugin.git
-    cd amirstan_plugin
-    cmake -DTENSORRT_DIR=/usr/lib/x86_64-linux-gnu -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
-    make -j$(nproc)
-   
-   export AMIRSTAN_LIBRARY_PATH=<amirstan_plugin_root>/lib
-   ```
-
 
  - Install some other packages:
    ```Shell
@@ -53,7 +30,7 @@
    pip install cython
    pip install opencv-python pillow matplotlib
    pip install git+https://github.com/haotian-liu/cocoapi.git#"egg=pycocotools&subdirectory=PythonAPI"
-   pip install GitPython termcolor tensorboard packaging
+   pip install GitPython termcolor tensorboard
    ```
  - Clone this repository and enter it:
    ```Shell

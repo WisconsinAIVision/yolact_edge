@@ -183,11 +183,6 @@ python train.py --config=yolact_edge_vid_trainflow_config --resume=./weights/yol
 python train.py --config=yolact_edge_vid_config --resume=./weights/yolact_edge_vid_trainflow_144_100000.pth
 ```
 
-### Experimental
-One can try to train yolact edge+ models with deformable convolutions. For installation instructions see [INSTALL.md](INSTALL.md)
-```Shell
-python train.py --config=yolact_edge_plus_config
-```
 
 ### Custom Datasets
 You can also train on your own dataset by following these steps:
