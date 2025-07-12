@@ -1,4 +1,4 @@
-from yolact_edge.backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone, MobileNetV2Backbone
+from backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone
 from math import sqrt
 import torch
 
@@ -54,36 +54,7 @@ COCO_LABEL_MAP = { 1:  1,  2:  2,  3:  3,  4:  4,  5:  5,  6:  6,  7:  7,  8:  8
                   74: 65, 75: 66, 76: 67, 77: 68, 78: 69, 79: 70, 80: 71, 81: 72,
                   82: 73, 84: 74, 85: 75, 86: 76, 87: 77, 88: 78, 89: 79, 90: 80}
 
-YOUTUBE_VIS_CLASSES = ('person', 'giant_panda', 'lizard', 'parrot', 'skateboard',
-                       'sedan', 'ape', 'dog', 'snake', 'monkey', 'hand', 'rabbit',
-                       'duck', 'cat', 'cow', 'fish', 'train', 'horse', 'turtle',
-                       'bear', 'motorbike', 'giraffe', 'leopard', 'fox', 'deer',
-                       'owl', 'surfboard', 'airplane', 'truck', 'zebra', 'tiger',
-                       'elephant', 'snowboard', 'boat', 'shark', 'mouse', 'frog',
-                       'eagle', 'earless_seal', 'tennis_racket')
 
-YOUTUBE_VIS_LABEL_MAP = { 1:  1,  2:  2,  3:  3,  4:  4,  5:  5,  6:  6,  7:  7,
-                          8:  8,  9:  9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14,
-                         15: 15, 16: 16, 17: 17, 18: 18, 19: 19, 20: 20, 21: 21,
-                         22: 22, 23: 23, 24: 24, 25: 25, 26: 26, 27: 27, 28: 28,
-                         29: 29, 30: 30, 31: 31, 32: 32, 33: 33, 34: 34, 35: 35,
-                         36: 36, 37: 37, 38: 38, 39: 39, 40: 40}
-
-COCO_INV_LABEL_MAP = {t: s for s, t in COCO_LABEL_MAP.items()}
-
-YTVIS_COCO_CLASS_MAP = {'person': 'person', 'skateboard': 'skateboard', 'sedan': 'car',
-                        'dog': 'dog', 'cat': 'cat', 'cow': 'cow', 'train': 'train',
-                        'horse': 'horse', 'bear': 'bear', 'motorbike': 'motorcycle',
-                        'giraffe': 'giraffe', 'surfboard': 'surfboard', 'airplane': 'airplane',
-                        'truck': 'truck', 'zebra': 'zebra', 'elephant': 'elephant',
-                        'snowboard': 'snowboard', 'boat': 'boat', 'tennis_racket': 'tennis racket'}
-
-COCO_YTVIS_CLASS_MAP = {coco: ytvis for ytvis, coco in YTVIS_COCO_CLASS_MAP.items()}
-COCO_YTVIS_LABEL_MAP = {COCO_INV_LABEL_MAP[COCO_CLASSES.index(coco) + 1]: YOUTUBE_VIS_CLASSES.index(ytvis) + 1 for coco, ytvis in COCO_YTVIS_CLASS_MAP.items()}
-COCO_INTER_LABEL_MAP = {COCO_INV_LABEL_MAP[COCO_CLASSES.index(coco) + 1]: COCO_CLASSES.index(coco) + 1 for coco in COCO_YTVIS_CLASS_MAP}
-
-MOTS_CLASSES = ('car', 'pedestrian')
-MOTS_LABEL_MAP = {1: 1, 2: 2}
 
 # ----------------------- CONFIG CLASS ----------------------- #
 
@@ -141,9 +112,6 @@ dataset_base = Config({
     'train_images': './data/coco/images/',
     'train_info':   'path_to_annotation_file',
 
-    # Calibration image folder for TensorRT INT8 conversion.
-    'calib_images': './data/coco/calib_images/',
-    
     # Validation images and annotations.
     'valid_images': './data/coco/images/',
     'valid_info':   'path_to_annotation_file',
@@ -151,22 +119,57 @@ dataset_base = Config({
     # Whether or not to load GT. If this is False, eval.py quantitative evaluation won't work.
     'has_gt': True,
 
-    # Whether the dataset is a video dataset
-    'is_video': False,
-
     # A list of names for each of you classes.
     'class_names': COCO_CLASSES,
 
     # COCO class ids aren't sequential, so this is a bandage fix. If your ids aren't sequential,
     # provide a map from category_id -> index in class_names + 1 (the +1 is there because it's 1-indexed).
     # If not specified, this just assumes category ids start at 1 and increase sequentially.
-    'label_map': None,
+    'label_map': None
+})
 
-    # Dataset Map
-    'dataset_map': None,
+# Dataset de Afzaal con aumento de imagenes clasico, mas clase Healthy Strawberry de StrawID
+strawberry_dataset = dataset_base.copy({
+    'name': 'Strawberry_Dataset',
 
-    # Joint training
-    'joint': None
+    'train_images': './Strawberry-segmentation-1/train/',
+    'train_info':   './Strawberry-segmentation-1/train/_annotations.coco.json',
+
+    'valid_images': './Strawberry-segmentation-1/valid/',
+    'valid_info':   './Strawberry-segmentation-1/valid/_annotations.coco.json',
+
+    'has_gt': True,
+    'class_names': ('Angular Leafspot', 'Anthracnose Fruit Rot', 'Healthy Strawberry', 'Blossom Blight','Gray Mold', 'Leaf Spot', 'Powdery Mildew Fruit', 'Powdery Mildew Leaf')
+})
+
+
+# Dataset de Afzaal y StrawID con aumento de imagenes clasico + sintetico por GAN
+strawberry_dataset_synthetic = dataset_base.copy({
+    'name': 'Strawberry_Dataset',
+
+    'train_images': './Strawberry-segmentation-synthetic/train/',
+    'train_info':   './Strawberry-segmentation-synthetic/train/_annotations.coco.json',
+
+    'valid_images': './Strawberry-segmentation-synthetic/valid/',
+    'valid_info':   './Strawberry-segmentation-synthetic/valid/_annotations.coco.json',
+
+    'has_gt': True,
+    'class_names': ('Angular Leafspot', 'Anthracnose Fruit Rot', 'Blossom Blight','Gray Mold','Healthy Strawberry', 'Leaf Spot', 'Powdery Mildew Fruit', 'Powdery Mildew Leaf')
+})
+
+# Dataset de original de Afzaal 
+
+strawberry_dataset_afzaal = dataset_base.copy({
+    'name': 'Strawberry_Dataset',
+
+    'train_images': './Strawberry-segmentation-Afzaal/train/',
+    'train_info':   './Strawberry-segmentation-Afzaal/train/_annotations.coco.json',
+
+    'valid_images': './Strawberry-segmentation-Afzaal/valid/',
+    'valid_info':   './Strawberry-segmentation-Afzaal/valid/_annotations.coco.json',
+
+    'has_gt': True,
+    'class_names': ('Angular Leafspot', 'Anthracnose Fruit Rot', 'Blossom Blight','Gray Mold', 'Leaf Spot', 'Powdery Mildew Fruit', 'Powdery Mildew Leaf')
 })
 
 coco2014_dataset = dataset_base.copy({
@@ -196,40 +199,22 @@ coco2017_testdev_dataset = dataset_base.copy({
     'label_map': COCO_LABEL_MAP
 })
 
-flying_chairs_dataset = dataset_base.copy({
-    'name': 'FlyingChairs',
+PASCAL_CLASSES = ("aeroplane", "bicycle", "bird", "boat", "bottle",
+                  "bus", "car", "cat", "chair", "cow", "diningtable",
+                  "dog", "horse", "motorbike", "person", "pottedplant",
+                  "sheep", "sofa", "train", "tvmonitor")
 
-    'trainval_info': './data/FlyingChairs/train_val.txt',
-    'trainval_images': './data/FlyingChairs/data/',
+pascal_sbd_dataset = dataset_base.copy({
+    'name': 'Pascal SBD 2012',
+
+    'train_images': './data/sbd/img',
+    'valid_images': './data/sbd/img',
+    
+    'train_info': './data/sbd/pascal_sbd_train.json',
+    'valid_info': './data/sbd/pascal_sbd_val.json',
+
+    'class_names': PASCAL_CLASSES,
 })
-
-youtube_vis_dataset = dataset_base.copy({
-    'name': 'YouTube VIS',
-
-    'class_names': YOUTUBE_VIS_CLASSES,
-    'label_map': YOUTUBE_VIS_LABEL_MAP,
-
-    'train_info': './data/YoutubeVIS/annotations/train.v4.json',
-    'train_images': './data/YoutubeVIS/train_all_frames/JPEGImages/',
-    'use_all_frames': False,
-
-    # Calibration image folder for TensorRT INT8 conversion.
-    # Because we need two frames (prev, next) to estimate flows and calibrate the warping module, we need to specify a parent folder for calibration images, and two sub-folders for previous and next frames correspondingly.
-    # Use colon(:) to split folder (sub-folders).
-    'calib_images': './data/YoutubeVIS/calib_images/:prev:next',
-
-    'frame_offset_lb': 1,
-    'frame_offset_ub': 4,
-    'frame_offset_multiplier': 1,
-    'all_frame_direction': 'allway',
-
-    'valid_info': './data/YoutubeVIS/annotations/valid.v4.json',
-    'valid_images': './data/YoutubeVIS/valid_all_frames/v4/',
-
-    'images_per_video': 5,
-    'is_video': True
-})
-
 
 
 
@@ -260,12 +245,7 @@ darknet_transform = Config({
     'to_float': True,
 })
 
-mobilenetv2_transform = Config({
-    'channel_order': 'RGB',
-    'normalize': True,
-    'subtract_means': False,
-    'to_float': False,
-})
+
 
 
 
@@ -311,12 +291,9 @@ resnet101_gn_backbone = backbone_base.copy({
     'pred_aspect_ratios': [ [[0.66685089, 1.7073535, 0.87508774, 1.16524493, 0.49059086]] ] * 6,
 })
 
-resnet152_backbone = resnet101_backbone.copy({
-    'name': 'ResNet152',
-    'path': 'resnet152-b121ed2d.pth',
-    'type': ResNetBackbone,
-    'args': ([3, 8, 36, 3],),
-    'transform': resnet_transform,
+resnet101_dcn_inter3_backbone = resnet101_backbone.copy({
+    'name': 'ResNet101_DCN_Interval3',
+    'args': ([3, 4, 23, 3], [0, 4, 23, 3], 3),
 })
 
 resnet50_backbone = resnet101_backbone.copy({
@@ -325,6 +302,11 @@ resnet50_backbone = resnet101_backbone.copy({
     'type': ResNetBackbone,
     'args': ([3, 4, 6, 3],),
     'transform': resnet_transform,
+})
+
+resnet50_dcnv2_backbone = resnet50_backbone.copy({
+    'name': 'ResNet50_DCNv2',
+    'args': ([3, 4, 6, 3], [0, 4, 6, 3]),
 })
 
 darknet53_backbone = backbone_base.copy({
@@ -360,33 +342,7 @@ vgg16_backbone = backbone_base.copy({
     'pred_aspect_ratios': [ [[1], [1, sqrt(2), 1/sqrt(2), sqrt(3), 1/sqrt(3)][:n]] for n in [3, 5, 5, 5, 3, 3] ],
 })
 
-mobilenetv2_arch = [
-    # t, c, n, s
-    [1, 16, 1, 1],
-    [6, 24, 2, 2],
-    [6, 32, 3, 2],
-    [6, 64, 4, 2],
-    [6, 96, 3, 1],
-    [6, 160, 3, 2],
-    [6, 320, 1, 1],
-]
 
-mobilenetv2_backbone = backbone_base.copy({
-    'name': 'MobileNetV2',
-    'path': 'mobilenet_v2-b0353104.pth',
-    'type': MobileNetV2Backbone,
-    'args': (1.0, mobilenetv2_arch, 8),
-    'transform': mobilenetv2_transform,
-
-    'selected_layers': [3, 4, 6],
-    
-    'pred_aspect_ratios': [ [[1, 1/2, 2]] ]*5,
-    'pred_scales': [[24], [48], [96], [192], [384]],
-
-    'use_pixel_scales': True,
-    'preapply_sqrt': False,
-    'use_square_anchors': True,
-})
 
 
 
@@ -447,6 +403,8 @@ mask_type = Config({
     #   - mask_proto_normalize_emulate_roi_pooling (bool): Normalize the mask loss to emulate roi pooling's affect on loss.
     #   - mask_proto_double_loss (bool): Whether to use the old loss in addition to any special new losses.
     #   - mask_proto_double_loss_alpha (float): The alpha to weight the above loss.
+    #   - mask_proto_split_prototypes_by_head (bool): If true, this will give each prediction head its own prototypes.
+    #   - mask_proto_crop_with_pred_box (bool): Whether to crop with the predicted box or the gt box.
     'lincomb': 1,
 })
 
@@ -486,39 +444,22 @@ fpn_base = Config({
     # Whether to pad the pred layers with 1 on each side (I forgot to add this at the start)
     # This is just here for backwards compatibility
     'pad': True,
+
+    # Whether to add relu to the downsampled layers.
+    'relu_downsample_layers': False,
+
+    # Whether to add relu to the regular layers
+    'relu_pred_layers': True,
 })
 
 
 
-# ------------------------ FLOW DEFAULTS ------------------------ #
-flow_base = Config({
-    'encode_layers': [[4, 1], [2], [4]],
-    'encode_channels': 256,
-    'fine_tune_layers': None,
-    'warp_layers': "P4P5",
-    'use_spa': False,
-    'use_normalized_spa': False,
-    'use_shuffle_cat': False,
-    'num_groups': 1,
-    'use_scale_factor': True,
-    'use_scale_bias': True,
-    'reduce_channels': [],
-    'warp_mode': 'none',
-    'flow_layer': 'each',
-    'base_backward': True,
-    'feature_matching_loss': None,
-    'fm_loss_loc': 'L',
-    'fm_loss_alpha': 1.0,
-    'train_flow': False,
-    'model': 'none',
-})
 
 
 # ----------------------- CONFIG DEFAULTS ----------------------- #
 
 coco_base_config = Config({
     'dataset': coco2014_dataset,
-    'joint_dataset': None,
     'num_classes': 81, # This should include the background class
 
     'max_iter': 400000,
@@ -549,6 +490,13 @@ coco_base_config = Config({
     # Eval.py sets this if you just want to run YOLACT as a detector
     'eval_mask_branch': True,
 
+    # Top_k examples to consider for NMS
+    'nms_top_k': 200,
+    # Examples with confidence less than this are not considered by NMS
+    'nms_conf_thresh': 0.05,
+    # Boxes with IoU overlap greater than this threshold will be culled during NMS
+    'nms_thresh': 0.5,
+
     # See mask_type for details.
     'mask_type': mask_type.direct,
     'mask_size': 16,
@@ -577,6 +525,8 @@ coco_base_config = Config({
     'mask_proto_normalize_emulate_roi_pooling': False,
     'mask_proto_double_loss': False,
     'mask_proto_double_loss_alpha': 1,
+    'mask_proto_split_prototypes_by_head': False,
+    'mask_proto_crop_with_pred_box': False,
 
     # SSD data augmentation parameters
     # Randomize hue, vibrance, etc.
@@ -618,6 +568,9 @@ coco_base_config = Config({
     # The initial bias toward forground objects, as specified in the focal loss paper
     'focal_loss_init_pi': 0.01,
 
+    # Keeps track of the average number of examples for each class, and weights the loss for that class accordingly.
+    'use_class_balanced_conf': False,
+
     # Whether to use sigmoid focal loss instead of softmax, all else being the same.
     'use_sigmoid_focal_loss': False,
 
@@ -634,6 +587,10 @@ coco_base_config = Config({
     # This branch is only evaluated during training time and is just there for multitask learning.
     'use_semantic_segmentation_loss': False,
     'semantic_segmentation_alpha': 1,
+
+    # Adds another branch to the netwok to predict Mask IoU.
+    'use_mask_scoring': False,
+    'mask_scoring_alpha': 1,
 
     # Match gt boxes using the Box2Pix change metric instead of the standard IoU metric.
     # Note that the threshold you set for iou_threshold should be negative with this setting on.
@@ -657,6 +614,9 @@ coco_base_config = Config({
     'positive_iou_threshold': 0.5,
     'negative_iou_threshold': 0.5,
 
+    # When using ohem, the ratio between positives and negatives (3 means 3 negatives to 1 positive)
+    'ohem_negpos_ratio': 3,
+
     # If less than 1, anchors treated as a negative that have a crowd iou over this threshold with
     # the crowd boxes will be treated as a neutral.
     'crowd_iou_threshold': 1,
@@ -664,8 +624,7 @@ coco_base_config = Config({
     # This is filled in at runtime by Yolact's __init__, so don't touch it
     'mask_dim': None,
 
-    # Input image size. If preserve_aspect_ratio is False, min_size is ignored.
-    'min_size': 200,
+    # Input image size.
     'max_size': 300,
     
     # Whether or not to do post processing on the cpu at test time
@@ -688,7 +647,7 @@ coco_base_config = Config({
     'use_gt_bboxes': False,
 
     # Whether or not to preserve aspect ratio when resizing the image.
-    # If True, uses the faster r-cnn resizing scheme.
+    # If True, this will resize all images to be max_size^2 pixels in area while keeping aspect ratio.
     # If False, all images are resized to max_size x max_size
     'preserve_aspect_ratio': False,
 
@@ -713,6 +672,23 @@ coco_base_config = Config({
 
     'backbone': None,
     'name': 'base_config',
+
+    # Fast Mask Re-scoring Network
+    # Inspried by Mask Scoring R-CNN (https://arxiv.org/abs/1903.00241)
+    # Do not crop out the mask with bbox but slide a convnet on the image-size mask,
+    # then use global pooling to get the final mask score
+    'use_maskiou': False,
+    
+    # Archecture for the mask iou network. A (num_classes-1, 1, {}) layer is appended to the end.
+    'maskiou_net': [],
+
+    # Discard predicted masks whose area is less than this
+    'discard_mask_area': -1,
+
+    'maskiou_alpha': 1.0,
+    'rescore_mask': False,
+    'rescore_bbox': False,
+    'maskious_to_train': -1,
 })
 
 
@@ -730,13 +706,11 @@ yolact_base_config = coco_base_config.copy({
 
     # Image Size
     'max_size': 550,
+    'mask_proto_debug': False,
     
     # Training params
-    'lr_schedule': 'step',
     'lr_steps': (280000, 600000, 700000, 750000),
     'max_iter': 800000,
-
-    'flow': flow_base,
     
     # Backbone Settings
     'backbone': resnet101_backbone.copy({
@@ -772,132 +746,55 @@ yolact_base_config = coco_base_config.copy({
     'crowd_iou_threshold': 0.7,
 
     'use_semantic_segmentation_loss': True,
-
-    'torch2trt_backbone': False,
-    'torch2trt_backbone_int8': False,
-    'torch2trt_protonet': False,
-    'torch2trt_protonet_int8': False,
-    'torch2trt_fpn': False,
-    'torch2trt_fpn_int8': False,
-    'torch2trt_prediction_module': False,
-    'torch2trt_prediction_module_int8': False,
-    'torch2trt_spa': False,
-    'torch2trt_spa_int8': False,
-    'torch2trt_flow_net': False,
-    'torch2trt_flow_net_int8': False,
-
-    'use_tensorrt_safe_mode': False,
 })
 
-yolact_edge_config = yolact_base_config.copy({
-    'name': 'yolact_edge',
-    'torch2trt_max_calibration_images': 100,
-    'torch2trt_backbone_int8': True,
-    'torch2trt_protonet_int8': True,
-    'torch2trt_fpn': True,
-    'torch2trt_prediction_module': True,
-    'use_fast_nms': False
-})
+yolact_im400_config = yolact_base_config.copy({
+    'name': 'yolact_im400',
 
-yolact_edge_mobilenetv2_config = yolact_edge_config.copy({
-    'name': 'yolact_edge_mobilenetv2',
-
-    'backbone': mobilenetv2_backbone
-})
-
-yolact_edge_vid_config = yolact_edge_config.copy({
-    'name': 'yolact_edge_vid',
-    'dataset': youtube_vis_dataset.copy({
-        'joint': 'coco',
-        'use_all_frames': True,
-        'images_per_video': 1,
-        'frame_offset_lb': 2,
-        'frame_offset_ub': 5,
-        'frame_offset_multiplier': 1,
-        'all_frame_direction': 'forward',
+    'max_size': 400,
+    'backbone': yolact_base_config.backbone.copy({
+        'pred_scales': [[int(x[0] / yolact_base_config.max_size * 400)] for x in yolact_base_config.backbone.pred_scales],
     }),
+})
 
-    'torch2trt_spa': True,
-    'torch2trt_spa_int8': False,
-    'torch2trt_flow_net': False,
-    'torch2trt_flow_net_int8': True,
+yolact_im700_config = yolact_base_config.copy({
+    'name': 'yolact_im700',
 
-    'joint_dataset': yolact_edge_config.dataset.copy({
-        'dataset_map': 'ytvis'
+    'masks_to_train': 300,
+    'max_size': 700,
+    'backbone': yolact_base_config.backbone.copy({
+        'pred_scales': [[int(x[0] / yolact_base_config.max_size * 700)] for x in yolact_base_config.backbone.pred_scales],
     }),
-    'lr': 2e-4,
-    'lr_warmup_init': 0,
-    'lr_schedule': 'cosine',
-    'max_iter': 200000,
-    'num_classes': len(youtube_vis_dataset.class_names) + 1,
-    'augment_expand': False,
-    'flow': flow_base.copy({
-        'encode_layers': [[1], [2], [4]],
-        'reduce_channels': [64],
-        'encode_channels': 64,
-        'num_groups': 1,
-        'use_shuffle_cat': False,
-        'base_backward': True,
-        'fine_tune_layers': 'flow_net,flow_net_pre_convs,spa,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
-        'selected_layers': [1, 2],
-        'warp_mode': 'flow',
-        'model': 'mini',
-        'use_pseudo_gt_flow_loss': False,
-        'feature_matching_loss': 'cosine',
-        'use_spa': True,
-        'fm_loss_loc': 'L+P',
-    })
 })
 
-yolact_edge_vid_minimal_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_vid_minimal',
-    'torch2trt_spa': False,
-    'flow': yolact_edge_vid_config.flow.copy({
-        'fine_tune_layers': 'flow_net,flow_net_pre_convs,fpn_phase_2,proto_net,prediction_layers,semantic_seg_conv',
-        'use_spa': False,
-        'feature_matching_loss': None,
-    })
-})
+yolact_darknet53_config = yolact_base_config.copy({
+    'name': 'yolact_darknet53',
 
-yolact_edge_vid_trainflow_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_vid_trainflow',
-    'dataset': flying_chairs_dataset,
-    'lr': 2e-4,
-    'max_iter': 400000,
-    'flow': yolact_edge_vid_config.flow.copy({
-        'train_flow': True,
-        'base_backward': False,
-        'fine_tune_layers': 'flow_net,flow_net_pre_convs'
-    })
-})
-
-yolact_edge_youtubevis_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_youtubevis',
-    'dataset': yolact_edge_vid_config.dataset.copy({
-        'use_all_frames': False,
-        'images_per_video': 1,
+    'backbone': darknet53_backbone.copy({
+        'selected_layers': list(range(2, 5)),
+        
+        'pred_scales': yolact_base_config.backbone.pred_scales,
+        'pred_aspect_ratios': yolact_base_config.backbone.pred_aspect_ratios,
+        'use_pixel_scales': True,
+        'preapply_sqrt': False,
+        'use_square_anchors': True, # This is for backward compatability with a bug
     }),
-
-    'torch2trt_spa': False,
-    'torch2trt_flow_net_int8': False,
-
-    'lr': 5e-4,
-    'lr_schedule': 'cosine',
-    'max_iter': 500000,
-    'augment_expand': True,
-    'flow': yolact_edge_vid_config.flow.copy({
-        'warp_mode': 'none',
-        'fine_tune_layers': None,
-        'use_spa': False
-    })
 })
+
+yolact_darknet53_custom_config = yolact_darknet53_config.copy({
+    'name': "strawberry_darknet53",
+    'dataset': strawberry_dataset_afzaal,
+    'num_classes': len(strawberry_dataset_afzaal.class_names) + 1,
+    'max_size': 460, 
+})
+
 
 yolact_resnet50_config = yolact_base_config.copy({
     'name': 'yolact_resnet50',
 
     'backbone': resnet50_backbone.copy({
         'selected_layers': list(range(1, 4)),
-
+        
         'pred_scales': yolact_base_config.backbone.pred_scales,
         'pred_aspect_ratios': yolact_base_config.backbone.pred_aspect_ratios,
         'use_pixel_scales': True,
@@ -906,42 +803,105 @@ yolact_resnet50_config = yolact_base_config.copy({
     }),
 })
 
-yolact_resnet152_config = yolact_base_config.copy({
-    'name': 'yolact_resnet152',
+yolact_resnet50_custom_config = yolact_resnet50_config.copy({
+    'name': "strawberry_resnet50",
+    'dataset': strawberry_dataset,
+    'num_classes': len(strawberry_dataset.class_names) + 1,
+    'max_size': 460, 
+})
 
-    'backbone': resnet152_backbone.copy({
+yolact_resnet50_custom_config_synthetic = yolact_resnet50_config.copy({
+    'name': "strawberry_resnet50_synthetic",
+    'dataset': strawberry_dataset_synthetic,
+    'num_classes': len(strawberry_dataset_synthetic.class_names) + 1,
+    'max_size': 460, 
+})
+
+yolact_resnet50_custom_config_Afzaal = yolact_resnet50_config.copy({
+    'name': "strawberry_resnet50_afzaal",
+    'dataset': strawberry_dataset_afzaal,
+    'num_classes': len(strawberry_dataset_afzaal.class_names) + 1,
+    'max_size': 460, 
+})
+
+yolact_resnet50_pascal_config = yolact_resnet50_config.copy({
+    'name': None, # Will default to yolact_resnet50_pascal
+    
+    # Dataset stuff
+    'dataset': pascal_sbd_dataset,
+    'num_classes': len(pascal_sbd_dataset.class_names) + 1,
+
+    'max_iter': 120000,
+    'lr_steps': (60000, 100000),
+    
+    'backbone': yolact_resnet50_config.backbone.copy({
+        'pred_scales': [[32], [64], [128], [256], [512]],
+        'use_square_anchors': False,
+    })
+})
+
+yolact_resnet101_custom_config_afzaal = yolact_base_config.copy({
+    'name': "strawberry_resnet101_afzaal",
+    'dataset': strawberry_dataset_afzaal,
+    'num_classes': len(strawberry_dataset_afzaal.class_names) + 1,
+    'max_size': 460, 
+})
+
+yolact_resnet101_custom_config = yolact_base_config.copy({
+    'name': "strawberry_resnet101",
+    'dataset': strawberry_dataset,
+    'num_classes': len(strawberry_dataset.class_names) + 1,
+    'max_size': 460, 
+})
+
+yolact_resnet101_custom_config_synthetic = yolact_base_config.copy({
+    'name': "strawberry_resnet101_synthetic",
+    'dataset': strawberry_dataset_synthetic,
+    'num_classes': len(strawberry_dataset_synthetic.class_names) + 1,
+    'max_size': 460, 
+})
+
+# ----------------------- YOLACT++ CONFIGS ----------------------- #
+
+yolact_plus_base_config = yolact_base_config.copy({
+    'name': 'yolact_plus_base',
+
+    'backbone': resnet101_dcn_inter3_backbone.copy({
         'selected_layers': list(range(1, 4)),
-
-        'pred_scales': yolact_base_config.backbone.pred_scales,
-        'pred_aspect_ratios': yolact_base_config.backbone.pred_aspect_ratios,
+        
+        'pred_aspect_ratios': [ [[1, 1/2, 2]] ]*5,
+        'pred_scales': [[i * 2 ** (j / 3.0) for j in range(3)] for i in [24, 48, 96, 192, 384]],
         'use_pixel_scales': True,
         'preapply_sqrt': False,
-        'use_square_anchors': True, # This is for backward compatability with a bug
+        'use_square_anchors': False,
+    }),
+
+    'use_maskiou': True,
+    'maskiou_net': [(8, 3, {'stride': 2}), (16, 3, {'stride': 2}), (32, 3, {'stride': 2}), (64, 3, {'stride': 2}), (128, 3, {'stride': 2})],
+    'maskiou_alpha': 25,
+    'rescore_bbox': False,
+    'rescore_mask': True,
+
+    'discard_mask_area': 5*5,
+})
+
+yolact_plus_resnet50_config = yolact_plus_base_config.copy({
+    'name': 'yolact_plus_resnet50',
+
+    'backbone': resnet50_dcnv2_backbone.copy({
+        'selected_layers': list(range(1, 4)),
+        
+        'pred_aspect_ratios': [ [[1, 1/2, 2]] ]*5,
+        'pred_scales': [[i * 2 ** (j / 3.0) for j in range(3)] for i in [24, 48, 96, 192, 384]],
+        'use_pixel_scales': True,
+        'preapply_sqrt': False,
+        'use_square_anchors': False,
     }),
 })
 
-yolact_edge_resnet50_config = yolact_edge_config.copy({
-    'name': 'yolact_edge_resnet50',
-    'backbone': yolact_resnet50_config.backbone
-})
-
-yolact_edge_vid_resnet50_config = yolact_edge_vid_config.copy({
-    'name': 'yolact_edge_vid_resnet50',
-    'backbone': yolact_resnet50_config.backbone
-})
-
-yolact_edge_vid_trainflow_resnet50_config = yolact_edge_vid_trainflow_config.copy({
-    'name': 'yolact_edge_vid_trainflow_resnet50',
-    'backbone': yolact_resnet50_config.backbone
-})
-
-yolact_edge_youtubevis_resnet50_config = yolact_edge_youtubevis_config.copy({
-    'name': 'yolact_edge_youtubevis_resnet50',
-    'backbone': yolact_resnet50_config.backbone
-})
 
 # Default config
-cfg = yolact_edge_config.copy()
+cfg = yolact_base_config.copy()
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """
@@ -950,6 +910,9 @@ def set_cfg(config_name:str):
     # Note this is not just an eval because I'm lazy, but also because it can
     # be used like ssd300_config.copy({'max_size': 400}) for extreme fine-tuning
     cfg.replace(eval(config_name))
+
+    if cfg.name is None:
+        cfg.name = config_name.split('_config')[0]
 
 def set_dataset(dataset_name:str):
     """ Sets the dataset of the current config. """
