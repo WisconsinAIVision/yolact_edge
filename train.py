@@ -26,12 +26,19 @@ import torch.multiprocessing as mp
 from yolact_edge.utils.logging_helper import setup_logger
 import logging
 import random
+import getpass
 
 # Oof
 import eval as eval_script
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
+
+def get_user_identifier():
+    try:
+        return hash(os.getuid())  # Unix/Linux
+    except AttributeError:
+        return hash(getpass.getuser())  # Windows
 
 
 parser = argparse.ArgumentParser(
@@ -50,7 +57,7 @@ parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--num_gpus', default=None, type=int,
                     help='Number of GPUs used in training')
-port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
+port = 2 ** 15 + 2 ** 14 + get_user_identifier() % 2 ** 14
 parser.add_argument("--dist_url", default="tcp://127.0.0.1:{}".format(port))
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
